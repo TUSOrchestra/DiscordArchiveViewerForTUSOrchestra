@@ -368,12 +368,7 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(
       <button id="themeToggle" class="theme-toggle"></button>
     </div>
 
-    <div class="storage-toggle">
-      <button class="storage-btn active" id="localBtn">Local</button>
-      <button class="storage-btn" id="driveBtn">Drive</button>
-    </div>
-
-    <!-- Local controls -->
+    <!-- Drive/GAS関連を削除しローカル入力のみ残す -->
     <div class="controls" id="localControls">
       <label>server.msgpack
         <input id="serverFile" type="file" accept=".msgpack">
@@ -381,22 +376,6 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(
       <label>messages.msgpack
         <input id="logFile" type="file" accept=".msgpack">
       </label>
-    </div>
-
-    <!-- Drive controls -->
-    <div class="drive-panel" id="drivePanel">
-      <button class="drive-button" id="fetchFilesBtn">ファイル一覧取得</button>
-      <label>server.msgpack
-        <select class="drive-input" id="serverSelect">
-          <option value="">選択してください</option>
-        </select>
-      </label>
-      <label>messages.msgpack
-        <select class="drive-input" id="messagesSelect">
-          <option value="">選択してください</option>
-        </select>
-      </label>
-      <button class="drive-button" id="loadDriveBtn" disabled>選択したファイルを読み込む</button>
     </div>
 
     <div id="serverHeader" class="server-header">
@@ -447,11 +426,6 @@ const threadPanel = document.getElementById('threadPanel');
 const threadTitle = document.getElementById('threadTitle');
 const threadMessages = document.getElementById('threadMessages');
 const threadClose = document.getElementById('threadClose');
-
-const fetchFilesBtn = document.getElementById('fetchFilesBtn');
-const serverSelect = document.getElementById('serverSelect');
-const messagesSelect = document.getElementById('messagesSelect');
-const loadDriveBtn = document.getElementById('loadDriveBtn');
 
 let users = {};
 let roles = {};
@@ -1042,8 +1016,6 @@ const driveBtn = document.getElementById('driveBtn');
 const localControls = document.getElementById('localControls');
 const drivePanel = document.getElementById('drivePanel');
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxFcMU8HxWFeyTcgIbX3SpVp53ur_Ylyz7TWFTRPQJrbDYPojGglEnKbSKNCO0B9aL8/exec'; // ← ここにGAS URLを設定
-
 localBtn.addEventListener('click', ()=>{
   localBtn.classList.add('active');
   driveBtn.classList.remove('active');
@@ -1058,121 +1030,6 @@ driveBtn.addEventListener('click', ()=>{
   drivePanel.classList.add('active');
 });
 
-/* ===== fetch files from drive ===== */
-fetchFilesBtn.addEventListener('click', async ()=>{
-  try{
-    fetchFilesBtn.disabled = true;
-    fetchFilesBtn.textContent = '取得中...';
-    const response = await fetch(GAS_URL, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'listFiles'})
-    });
-    const data = await response.json();
-    if(!data.success){
-      alert('ファイル取得に失敗しました: ' + data.error);
-      return;
-    }
-    driveFiles = data.files || [];
-    populateDriveSelects(driveFiles);
-  }catch(err){
-    alert('エラー: ' + err.message + '\n\nGAS URLが正しいか、デプロイ設定を確認してください。');
-    console.error('Fetch error:', err);
-  }finally{
-    fetchFilesBtn.disabled = false;
-    fetchFilesBtn.textContent = 'ファイル一覧取得';
-  }
-});
-
-function populateDriveSelects(files){
-  const setOptions = (sel, items, placeholder)=>{
-    sel.innerHTML = `<option value="">${placeholder}</option>`;
-    items.forEach(f=>{
-      const opt = document.createElement('option');
-      opt.value = f.id;
-      opt.textContent = f.name;
-      sel.appendChild(opt);
-    });
-  };
-  const serverCandidates = files.filter(f=>f.name.toLowerCase().includes('server') && f.name.endsWith('.msgpack'));
-  const messageCandidates = files.filter(f=>(f.name.toLowerCase().includes('messages') || f.name.toLowerCase().includes('log')) && f.name.endsWith('.msgpack'));
-  setOptions(serverSelect, serverCandidates, 'server.msgpackを選択');
-  setOptions(messagesSelect, messageCandidates, 'messages.msgpackを選択');
-  selectedFiles = {server:null, messages:null};
-  loadDriveBtn.disabled = true;
-}
-
-function onSelectChange(){
-  selectedFiles.server = serverSelect.value || null;
-  selectedFiles.messages = messagesSelect.value || null;
-  loadDriveBtn.disabled = !(selectedFiles.server && selectedFiles.messages);
-}
-serverSelect.addEventListener('change', onSelectChange);
-messagesSelect.addEventListener('change', onSelectChange);
-
-loadDriveBtn.addEventListener('click', ()=>{
-  if(!(selectedFiles.server && selectedFiles.messages)) return;
-  loadFromDrive();
-});
-
-async function loadFromDrive(){
-  try {
-    loadDriveBtn.disabled = true;
-    loadDriveBtn.textContent = '読み込み中...';
-
-    const serverFile = await fetchDriveFile(selectedFiles.server);
-    const messagesFile = await fetchDriveFile(selectedFiles.messages);
-
-    users = serverFile.Users || {};
-    roles = serverFile.Roles || {};
-    emojis = serverFile.Emojis || {};
-
-    const icon = serverFile["__server_icon__"];
-    if(icon){
-      serverName.textContent = icon[0];
-      if(icon[2]) serverIcon.src = blobURL(icon[2]);
-      serverHeader.style.display = 'flex';
-    }
-
-    messageData = messagesFile;
-    buildTree();
-  } catch(err){
-    alert('ファイル読み込みエラー: ' + err.message);
-    console.error('Load error:', err);
-  } finally {
-    loadDriveBtn.disabled = false;
-    loadDriveBtn.textContent = '選択したファイルを読み込む';
-  }
-}
-
-async function fetchDriveFile(fileId){
-  // Driveの公開ダウンロードURL（共有設定: リンクを知っている全員）
-  const url = `https://drive.google.com/uc?export=download&id=${fileId}`;
-  console.log('Fetching file (Drive direct):', fileId);
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-  try {
-    const response = await fetch(url, { method: 'GET', signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if(!response.ok){
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    console.log('File downloaded, size:', arrayBuffer.byteLength, 'bytes');
-
-    return msgpack.decode(new Uint8Array(arrayBuffer));
-  } catch(err){
-    clearTimeout(timeoutId);
-    if(err.name === 'AbortError'){
-      throw new Error('タイムアウト: ファイルの取得に時間がかかりすぎています');
-    }
-    throw new Error(`ファイル取得失敗: ${err.message}`);
-  }
-}
 </script>
 </body>
 </html>
