@@ -1148,19 +1148,38 @@ async function loadFromDrive(){
 async function fetchDriveFile(fileId){
   const url = `${GAS_URL}?action=downloadFile&fileId=${fileId}`;
   
+  // URLをコンソールに出力（デバッグ用）
+  console.log('Fetching from:', url);
+  
+  // タイムアウト設定（30秒）
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/octet-stream, application/json'
+      }
+    });
+    
+    clearTimeout(timeoutId);
     
     if(!response.ok){
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
     const contentType = response.headers.get('content-type');
+    console.log('Response content-type:', contentType);
+    
     let arrayBuffer;
 
     // GAS から Base64 で返ってくる場合
     if(contentType && contentType.includes('application/json')){
       const jsonData = await response.json();
+      console.log('JSON response received, data field exists:', !!jsonData.data);
+      
       if(jsonData.data){
         const binaryString = atob(jsonData.data);
         const bytes = new Uint8Array(binaryString.length);
@@ -1168,17 +1187,33 @@ async function fetchDriveFile(fileId){
           bytes[i] = binaryString.charCodeAt(i);
         }
         arrayBuffer = bytes.buffer;
+      } else if(jsonData.error){
+        throw new Error(`GASエラー: ${jsonData.error}`);
       } else {
         throw new Error('GASレスポンスにdataフィールドがありません');
       }
     } else {
       // バイナリで直接返ってくる場合
-      arrayBuffer = await response.arrayBuffer();
+      const blob = await response.blob();
+      arrayBuffer = await blob.arrayBuffer();
+      console.log('Binary response received, size:', arrayBuffer.byteLength);
     }
 
     return msgpack.decode(new Uint8Array(arrayBuffer));
   } catch(err){
-    throw new Error(`ファイル取得失敗 (${fileId}): ${err.message}`);
+    clearTimeout(timeoutId);
+    
+    if(err.name === 'AbortError'){
+      throw new Error(`タイムアウト (30秒): ファイルの取得に時間がかかりすぎています`);
+    }
+    
+    console.error('Fetch error details:', {
+      message: err.message,
+      fileId: fileId,
+      url: url
+    });
+    
+    throw new Error(`ファイル取得失敗: ${err.message}`);
   }
 }
 </script>
