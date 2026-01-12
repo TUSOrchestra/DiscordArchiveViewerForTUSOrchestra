@@ -386,7 +386,17 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(
     <!-- Drive controls -->
     <div class="drive-panel" id="drivePanel">
       <button class="drive-button" id="fetchFilesBtn">ファイル一覧取得</button>
-      <div class="file-list" id="fileList"></div>
+      <label>server.msgpack
+        <select class="drive-input" id="serverSelect">
+          <option value="">選択してください</option>
+        </select>
+      </label>
+      <label>messages.msgpack
+        <select class="drive-input" id="messagesSelect">
+          <option value="">選択してください</option>
+        </select>
+      </label>
+      <button class="drive-button" id="loadDriveBtn" disabled>選択したファイルを読み込む</button>
     </div>
 
     <div id="serverHeader" class="server-header">
@@ -438,11 +448,18 @@ const threadTitle = document.getElementById('threadTitle');
 const threadMessages = document.getElementById('threadMessages');
 const threadClose = document.getElementById('threadClose');
 
+const fetchFilesBtn = document.getElementById('fetchFilesBtn');
+const serverSelect = document.getElementById('serverSelect');
+const messagesSelect = document.getElementById('messagesSelect');
+const loadDriveBtn = document.getElementById('loadDriveBtn');
+
 let users = {};
 let roles = {};
 let emojis = {};
 let messageData = null;
 let currentChannel = null;
+let selectedFiles = { server: null, messages: null };
+let driveFiles = {};
 
 /* ===== theme toggle ===== */
 function initTheme(){
@@ -1024,15 +1041,8 @@ const localBtn = document.getElementById('localBtn');
 const driveBtn = document.getElementById('driveBtn');
 const localControls = document.getElementById('localControls');
 const drivePanel = document.getElementById('drivePanel');
-const fetchFilesBtn = document.getElementById('fetchFilesBtn');
-const fileList = document.getElementById('fileList');
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbz8yDEAX9iA6r4BdKoM072_za35iNrm6eUWWD1Qc-JFAH1iGgIBn2K3ZlduiUxcp6i1/exec'; // ← ここにGAS URLを設定
-
-let selectedFiles = {
-  server: null,
-  messages: null
-};
 
 localBtn.addEventListener('click', ()=>{
   localBtn.classList.add('active');
@@ -1050,80 +1060,65 @@ driveBtn.addEventListener('click', ()=>{
 
 /* ===== fetch files from drive ===== */
 fetchFilesBtn.addEventListener('click', async ()=>{
-  try {
+  try{
     fetchFilesBtn.disabled = true;
     fetchFilesBtn.textContent = '取得中...';
-
     const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain'
-      },
-      body: JSON.stringify({action: 'listFiles'})
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'listFiles'})
     });
-
     const data = await response.json();
-
     if(!data.success){
       alert('ファイル取得に失敗しました: ' + data.error);
       return;
     }
-
-    displayFileList(data.files);
-  } catch(err){
+    driveFiles = data.files || [];
+    populateDriveSelects(driveFiles);
+  }catch(err){
     alert('エラー: ' + err.message + '\n\nGAS URLが正しいか、デプロイ設定を確認してください。');
     console.error('Fetch error:', err);
-  } finally {
+  }finally{
     fetchFilesBtn.disabled = false;
     fetchFilesBtn.textContent = 'ファイル一覧取得';
   }
 });
 
-function displayFileList(files){
-  fileList.innerHTML = '';
-
-  const grouped = {
-    server: files.filter(f => f.name.includes('server')),
-    messages: files.filter(f => f.name.includes('messages') || f.name.includes('log'))
+function populateDriveSelects(files){
+  const setOptions = (sel, items, placeholder)=>{
+    sel.innerHTML = `<option value="">${placeholder}</option>`;
+    items.forEach(f=>{
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = `${f.name} (${(f.size/1024/1024).toFixed(1)}MB)`;
+      sel.appendChild(opt);
+    });
   };
-
-  ['server', 'messages'].forEach(type=>{
-    if(grouped[type].length > 0){
-      const headerDiv = document.createElement('div');
-      headerDiv.className = 'file-item server';
-      headerDiv.textContent = type === 'server' ? 'Server Files' : 'Message Files';
-      fileList.appendChild(headerDiv);
-
-      grouped[type].forEach(file=>{
-        const fileDiv = document.createElement('div');
-        fileDiv.className = 'file-item';
-        fileDiv.innerHTML = `<span>${file.name}</span><span style="font-size:11px;color:var(--text-2)">${(file.size/1024/1024).toFixed(1)}MB</span>`;
-        fileDiv.onclick = ()=>selectFile(type, file);
-        fileList.appendChild(fileDiv);
-      });
-    }
-  });
+  const serverCandidates = files.filter(f=>f.name.toLowerCase().includes('server') && f.name.endsWith('.msgpack'));
+  const messageCandidates = files.filter(f=>(f.name.toLowerCase().includes('messages') || f.name.toLowerCase().includes('log')) && f.name.endsWith('.msgpack'));
+  setOptions(serverSelect, serverCandidates, 'server.msgpackを選択');
+  setOptions(messagesSelect, messageCandidates, 'messages.msgpackを選択');
+  selectedFiles = {server:null, messages:null};
+  loadDriveBtn.disabled = true;
 }
 
-function selectFile(type, file){
-  selectedFiles[type] = file;
-  fileList.querySelectorAll('.file-item').forEach(el=>{
-    if(el.textContent.includes(file.name)){
-      el.style.background = 'var(--selected)';
-    } else {
-      el.style.background = '';
-    }
-  });
-
-  if(selectedFiles.server && selectedFiles.messages){
-    loadFromDrive();
-  }
+function onSelectChange(){
+  selectedFiles.server = serverSelect.value || null;
+  selectedFiles.messages = messagesSelect.value || null;
+  loadDriveBtn.disabled = !(selectedFiles.server && selectedFiles.messages);
 }
+serverSelect.addEventListener('change', onSelectChange);
+messagesSelect.addEventListener('change', onSelectChange);
+
+loadDriveBtn.addEventListener('click', ()=>{
+  if(!(selectedFiles.server && selectedFiles.messages)) return;
+  loadFromDrive();
+});
 
 async function loadFromDrive(){
   try {
-    const serverFile = await fetchDriveFile(selectedFiles.server.id);
-    const messagesFile = await fetchDriveFile(selectedFiles.messages.id);
+    const serverFile = await fetchDriveFile(selectedFiles.server);
+    const messagesFile = await fetchDriveFile(selectedFiles.messages);
 
     users = serverFile.Users || {};
     roles = serverFile.Roles || {};
