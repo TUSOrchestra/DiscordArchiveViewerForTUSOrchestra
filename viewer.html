@@ -1042,7 +1042,7 @@ const driveBtn = document.getElementById('driveBtn');
 const localControls = document.getElementById('localControls');
 const drivePanel = document.getElementById('drivePanel');
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbz8yDEAX9iA6r4BdKoM072_za35iNrm6eUWWD1Qc-JFAH1iGgIBn2K3ZlduiUxcp6i1/exec'; // ← ここにGAS URLを設定
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxD9boP4CCT1Or4aDjBAFTRRsncl2OJBrY_vyKaIUyEx4PwGreG6ygZQdBw_usl9zi/exec'; // ← ここにGAS URLを設定
 
 localBtn.addEventListener('click', ()=>{
   localBtn.classList.add('active');
@@ -1090,7 +1090,7 @@ function populateDriveSelects(files){
     items.forEach(f=>{
       const opt = document.createElement('option');
       opt.value = f.id;
-      opt.textContent = `${f.name} (${(f.size/1024/1024).toFixed(1)}MB)`;
+      opt.textContent = f.name;
       sel.appendChild(opt);
     });
   };
@@ -1148,20 +1148,15 @@ async function loadFromDrive(){
 async function fetchDriveFile(fileId){
   const url = `${GAS_URL}?action=downloadFile&fileId=${fileId}`;
   
-  // URLをコンソールに出力（デバッグ用）
-  console.log('Fetching from:', url);
+  console.log('Fetching file:', fileId);
   
-  // タイムアウト設定（30秒）
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒に延長
   
   try {
     const response = await fetch(url, {
       method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/octet-stream, application/json'
-      }
+      signal: controller.signal
     });
     
     clearTimeout(timeoutId);
@@ -1173,45 +1168,17 @@ async function fetchDriveFile(fileId){
     const contentType = response.headers.get('content-type');
     console.log('Response content-type:', contentType);
     
-    let arrayBuffer;
-
-    // GAS から Base64 で返ってくる場合
-    if(contentType && contentType.includes('application/json')){
-      const jsonData = await response.json();
-      console.log('JSON response received, data field exists:', !!jsonData.data);
-      
-      if(jsonData.data){
-        const binaryString = atob(jsonData.data);
-        const bytes = new Uint8Array(binaryString.length);
-        for(let i = 0; i < binaryString.length; i++){
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        arrayBuffer = bytes.buffer;
-      } else if(jsonData.error){
-        throw new Error(`GASエラー: ${jsonData.error}`);
-      } else {
-        throw new Error('GASレスポンスにdataフィールドがありません');
-      }
-    } else {
-      // バイナリで直接返ってくる場合
-      const blob = await response.blob();
-      arrayBuffer = await blob.arrayBuffer();
-      console.log('Binary response received, size:', arrayBuffer.byteLength);
-    }
+    // GASのgetBlobで直接バイナリが返る
+    const arrayBuffer = await response.arrayBuffer();
+    console.log('File downloaded, size:', arrayBuffer.byteLength, 'bytes');
 
     return msgpack.decode(new Uint8Array(arrayBuffer));
   } catch(err){
     clearTimeout(timeoutId);
     
     if(err.name === 'AbortError'){
-      throw new Error(`タイムアウト (30秒): ファイルの取得に時間がかかりすぎています`);
+      throw new Error(`タイムアウト: ファイルの取得に時間がかかりすぎています`);
     }
-    
-    console.error('Fetch error details:', {
-      message: err.message,
-      fileId: fileId,
-      url: url
-    });
     
     throw new Error(`ファイル取得失敗: ${err.message}`);
   }
