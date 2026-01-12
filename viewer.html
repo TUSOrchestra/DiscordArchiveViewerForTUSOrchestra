@@ -1042,7 +1042,7 @@ const driveBtn = document.getElementById('driveBtn');
 const localControls = document.getElementById('localControls');
 const drivePanel = document.getElementById('drivePanel');
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxD9boP4CCT1Or4aDjBAFTRRsncl2OJBrY_vyKaIUyEx4PwGreG6ygZQdBw_usl9zi/exec'; // ← ここにGAS URLを設定
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxFcMU8HxWFeyTcgIbX3SpVp53ur_Ylyz7TWFTRPQJrbDYPojGglEnKbSKNCO0B9aL8/exec'; // ← ここにGAS URLを設定
 
 localBtn.addEventListener('click', ()=>{
   localBtn.classList.add('active');
@@ -1146,40 +1146,30 @@ async function loadFromDrive(){
 }
 
 async function fetchDriveFile(fileId){
-  const url = `${GAS_URL}?action=downloadFile&fileId=${fileId}`;
-  
-  console.log('Fetching file:', fileId);
-  
+  // Driveの公開ダウンロードURL（共有設定: リンクを知っている全員）
+  const url = `https://drive.google.com/uc?export=download&id=${fileId}`;
+  console.log('Fetching file (Drive direct):', fileId);
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒に延長
-  
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      signal: controller.signal
-    });
-    
+    const response = await fetch(url, { method: 'GET', signal: controller.signal });
     clearTimeout(timeoutId);
-    
+
     if(!response.ok){
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const contentType = response.headers.get('content-type');
-    console.log('Response content-type:', contentType);
-    
-    // GASのgetBlobで直接バイナリが返る
     const arrayBuffer = await response.arrayBuffer();
     console.log('File downloaded, size:', arrayBuffer.byteLength, 'bytes');
 
     return msgpack.decode(new Uint8Array(arrayBuffer));
   } catch(err){
     clearTimeout(timeoutId);
-    
     if(err.name === 'AbortError'){
-      throw new Error(`タイムアウト: ファイルの取得に時間がかかりすぎています`);
+      throw new Error('タイムアウト: ファイルの取得に時間がかかりすぎています');
     }
-    
     throw new Error(`ファイル取得失敗: ${err.message}`);
   }
 }
