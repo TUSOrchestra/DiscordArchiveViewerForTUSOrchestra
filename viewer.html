@@ -1010,25 +1010,7 @@ threadClose.addEventListener('click', (e)=>{
   document.querySelectorAll('.thread').forEach(el=>el.classList.remove('selected'));
 });
 
-/* ===== storage toggle ===== */
-const localBtn = document.getElementById('localBtn');
-const driveBtn = document.getElementById('driveBtn');
-const localControls = document.getElementById('localControls');
-const drivePanel = document.getElementById('drivePanel');
 
-localBtn.addEventListener('click', ()=>{
-  localBtn.classList.add('active');
-  driveBtn.classList.remove('active');
-  localControls.style.display = 'block';
-  drivePanel.classList.remove('active');
-});
-
-driveBtn.addEventListener('click', ()=>{
-  driveBtn.classList.add('active');
-  localBtn.classList.remove('active');
-  localControls.style.display = 'none';
-  drivePanel.classList.add('active');
-});
 
 </script>
 </body>
