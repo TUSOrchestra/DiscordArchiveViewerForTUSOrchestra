@@ -1027,7 +1027,7 @@ const drivePanel = document.getElementById('drivePanel');
 const fetchFilesBtn = document.getElementById('fetchFilesBtn');
 const fileList = document.getElementById('fileList');
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzhkOzBen5AHZTz5u_SmUNRwhNrAAn77CJ8Vnf0eR3LYHbhGgefNiSaVO0IGOkjh8_g/exec'; // ← ここにGAS URLを設定
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwj1Q-Th8x6NrVDT8PX_QJ9dcAuGAm-0XPoB6j3V0gqPI5qqkSOI63Q-srk5UX_SlgF/exec'; // ← ここにGAS URLを設定
 
 let selectedFiles = {
   server: null,
@@ -1056,16 +1056,11 @@ fetchFilesBtn.addEventListener('click', async ()=>{
 
     const response = await fetch(GAS_URL, {
       method: 'POST',
-      mode: 'no-cors',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'text/plain'
       },
       body: JSON.stringify({action: 'listFiles'})
     });
-
-    if(!response.ok && response.status !== 0){
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
 
     const data = await response.json();
 
@@ -1076,7 +1071,7 @@ fetchFilesBtn.addEventListener('click', async ()=>{
 
     displayFileList(data.files);
   } catch(err){
-    alert('エラー: ' + err.message + '\n\nGAS URLが正しいか確認してください。');
+    alert('エラー: ' + err.message + '\n\nGAS URLが正しいか、デプロイ設定を確認してください。');
     console.error('Fetch error:', err);
   } finally {
     fetchFilesBtn.disabled = false;
@@ -1151,16 +1146,11 @@ async function loadFromDrive(){
 async function fetchDriveFile(fileId){
   const response = await fetch(GAS_URL, {
     method: 'POST',
-    mode: 'no-cors',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'text/plain'
     },
     body: JSON.stringify({action: 'getFile', fileId: fileId})
   });
-
-  if(!response.ok && response.status !== 0){
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
 
   const data = await response.json();
   if(!data.success){
