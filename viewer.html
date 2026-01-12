@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Discord Archive Viewer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#fbfbfb;--panel:#f3f3f4;--hover:#eeeeef;
+  --panel-hover:#e7e7e9;--selected:#dddde0;
+  --text:#333;--text-2:#9aa3ac
+}
+body[data-theme="dark"]{
+  --bg:#1a1a1a;--panel:#121212;--hover:#242424;
+  --panel-hover:#1d1d1d;--selected:#2c2c2c;
+  --text:#e0e0e0;--text-2:#a0a0a0
+}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text);transition:background 0.1s,color 0.1s}
+.app{display:flex;height:100vh}
+
+/* sidebar */
+.sidebar{width:300px;background:var(--panel);padding:12px;overflow:auto}
+.header{font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.theme-toggle{
+  width:24px;
+  height:24px;
+  border:none;
+  border-radius:4px;
+  background:var(--text);
+  cursor:pointer;
+  transition:box-shadow 0.2s;
+}
+.theme-toggle:hover{
+  box-shadow:0 0 0 2px var(--text-2);
+}
+.tree{list-style:none;padding:0;margin:0}
+.cat-title{font-weight:600;padding:6px;border-radius:6px;cursor:pointer}
+.cat-title:hover{background:var(--panel-hover)}
+.channels{display:none;list-style:none;padding-left:12px}
+.channel{padding:4px;border-radius:6px;cursor:pointer;color:var(--text-2);display:flex}
+.channel:hover{background:var(--panel-hover)}
+.channel.selected{background:var(--selected);color:var(--text)}
+.channel-icon-wrapper{
+  display:inline-flex;
+  align-items:center;
+  width:16px;
+  flex-shrink:0;
+  font-size:12px;
+}
+.channel-content{display:inline;word-break:break-word}
+
+/* threads in sidebar */
+.threads{list-style:none;padding-left:24px;margin-top:4px;margin-bottom:4px}
+.thread{
+  padding:4px;
+  border-radius:6px;
+  cursor:pointer;
+  color:var(--text-2);
+  font-size:13px;
+}
+.thread:hover{background:var(--panel-hover)}
+.thread.selected{background:var(--selected);color:var(--text)}
+
+/* main */
+.main{flex:1;display:flex;flex-direction:column;min-width:40vw}
+.topbar{height:30px;padding:12px;border-bottom:1px solid #0002}
+.messages{flex:1;overflow:auto;padding:12px}
+
+/* thread panel */
+.thread-panel{
+  width:400px;
+  background:var(--panel);
+  display:none;
+  flex-direction:column;
+  border-left:1px solid #0002;
+}
+.thread-panel.active{
+  display:flex;
+}
+.thread-topbar{
+  height:30px;
+  padding:12px;
+  border-bottom:1px solid #0002;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.thread-close{
+  cursor:pointer;
+  font-size:18px;
+  color:var(--text-2);
+  padding:4px 8px;
+  border-radius:4px;
+}
+.thread-close:hover{
+  background:var(--hover);
+}
+.thread-messages{
+  flex:1;
+  overflow:auto;
+  padding:12px;
+}
+
+/* message */
+.msg-container{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:6px}
+.msg-container:hover{background:var(--hover)}
+.msg-content-wrapper{display:flex;gap:10px}
+.avatar img{width:36px;height:36px;border-radius:50%;object-fit:cover}
+.msg-header{font-size:13px;font-weight:600}
+.msg-header-name{font-size:15px;font-weight:600;margin-right:8px}
+.msg-header-time{font-size:12px;color:var(--text-2)}
+.content{white-space:pre-wrap;word-break:break-word}
+.content img{max-width:60%;border-radius:6px;margin-top:6px;max-height:40vh;cursor:pointer}
+/* ===== reply表示 ===== */
+.reply-block{
+  height:18px;
+  font-size:12px;
+  color:var(--text-2);
+  margin-bottom:0;
+  margin-left:0;
+  padding-left:8px;
+  cursor:pointer;
+  position:relative;
+  display:flex;
+  gap:10px;
+}
+
+.reply-block-header{
+  width:36px;
+  flex-shrink:0;
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding-top:2px;
+}
+.reply-block-header .line{
+  position:absolute;
+  top:8px;
+  left:8px;
+  width:18px;
+  height:10px;
+  display:block;
+  border-left:2px solid var(--text-2);
+  border-top:2px solid var(--text-2);
+  border-top-left-radius:7px;
+  box-sizing:border-box;
+}
+
+.reply-block-content{
+  flex:1;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.reply-block-content img.reply-avatar{
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  object-fit:cover;
+  flex-shrink:0;
+}
+
+/* mentions */
+.mention{
+  padding:2px 4px;
+  border-radius:4px;
+  font-weight:600;
+}
+.mention.user{
+  background:#5865f21a;
+  color:#5865f2;
+}
+.mention.everyone{
+  background:#f047471a;
+  color:#f04747;
+}
+
+/* links */
+.mention a{
+  text-decoration:none;
+}
+.mention a:hover{
+  text-decoration:underline;
+}
+
+/* poll */
+.poll{
+  border:1px solid var(--panel-hover);
+  border-radius:8px;
+  padding:12px;
+  margin-top:8px;
+  background:var(--panel);
+}
+.poll-question{
+  font-weight:600;
+  margin-bottom:12px;
+}
+.poll-answer{
+  padding:8px;
+  margin:4px 0;
+  border-radius:6px;
+  background:var(--hover);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  position:relative;
+  overflow:hidden;
+}
+.poll-answer-bar{
+  position:absolute;
+  left:0;
+  top:0;
+  height:100%;
+  background:rgba(88,165,242,0.2);
+  border-radius:6px;
+  z-index:0;
+}
+.poll-answer-text{
+  flex:1;
+  position:relative;
+  z-index:1;
+}
+.poll-answer-votes{
+  color:var(--text-2);
+  font-size:12px;
+  margin-left:8px;
+  position:relative;
+  z-index:1;
+}
+
+/* server header */
+.server-header{
+  display:none;
+  align-items:center;
+  gap:8px;
+  padding:6px;
+  background:var(--panel);
+  border-radius:6px;
+  margin-bottom:8px
+}
+.server-header img{width:40px;height:40px;border-radius:6px}
+
+/* modal */
+.modal{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.8);
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+}
+.modal.active{
+  display:flex;
+}
+.modal-content{
+  max-width:90vw;
+  max-height:90vh;
+  object-fit:contain;
+  border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="header">
+      <span>Viewer</span>
+      <button id="themeToggle" class="theme-toggle"></button>
+    </div>
+
+    <div class="controls">
+      <label>server.msgpack
+        <input id="serverFile" type="file" accept=".msgpack">
+      </label>
+      <label>messages.msgpack
+        <input id="logFile" type="file" accept=".msgpack">
+      </label>
+    </div>
+
+    <div id="serverHeader" class="server-header">
+      <img id="serverIcon">
+      <div id="serverName"></div>
+    </div>
+
+    <ul id="tree" class="tree"></ul>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div id="roomTitle">未選択</div>
+    </div>
+    <div id="messages" class="messages"></div>
+  </main>
+
+  <aside class="thread-panel" id="threadPanel">
+    <div class="thread-topbar">
+      <div id="threadTitle"></div>
+      <div class="thread-close" id="threadClose">✕</div>
+    </div>
+    <div id="threadMessages" class="thread-messages"></div>
+  </aside>
+</div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="modal">
+  <img id="modalImage" class="modal-content">
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/msgpack-lite@0.1.26/dist/msgpack.min.js"></script>
+<script>
+const serverInput = document.getElementById('serverFile');
+const logInput = document.getElementById('logFile');
+const tree = document.getElementById('tree');
+const messagesEl = document.getElementById('messages');
+
+const serverHeader = document.getElementById('serverHeader');
+const serverIcon = document.getElementById('serverIcon');
+const serverName = document.getElementById('serverName');
+
+const imageModal = document.getElementById('imageModal');
+const modalImage = document.getElementById('modalImage');
+const themeToggle = document.getElementById('themeToggle');
+
+const threadPanel = document.getElementById('threadPanel');
+const threadTitle = document.getElementById('threadTitle');
+const threadMessages = document.getElementById('threadMessages');
+const threadClose = document.getElementById('threadClose');
+
+let users = {};
+let roles = {};
+let emojis = {};
+let messageData = null;
+let currentChannel = null;
+
+/* ===== theme toggle ===== */
+function initTheme(){
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.body.setAttribute('data-theme', savedTheme);
+}
+
+themeToggle.addEventListener('click', ()=>{
+  const currentTheme = document.body.getAttribute('data-theme');
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  document.body.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+});
+
+initTheme();
+
+function blobURL(bytes){
+  return URL.createObjectURL(new Blob([new Uint8Array(bytes)]));
+}
+
+function escapeHtml(s){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+
+/* ===== display name ===== */
+function displayName(uid){
+  const u = users[uid];
+  if(!u) return uid;
+
+  const nickname = u[0];
+
+  return nickname;
+}
+
+/* ===== mention rendering ===== */
+function renderMentions(text){
+  if(typeof text !== 'string') return '';
+
+  let html = text;
+
+  // everyone / here
+  html = html.replace(/@everyone/g,
+    `<span class="mention everyone">@everyone</span>`);
+  html = html.replace(/@here/g,
+    `<span class="mention everyone">@here</span>`);
+
+  // role mentions
+  html = html.replace(/<@&(\d+)>/g, (_, id)=>{
+    const r = roles[id];
+    const name = r ? r[0] : `role(${id})`;
+    const color = r && r[1] ? r[1] : '#999';
+    return `<span class="mention" style="background:${color}22;color:${color}">@${escapeHtml(name)}</span>`;
+  });
+
+  // user mentions
+  html = html.replace(/<@!?(\d+)>/g, (_, id)=>{
+    return `<span class="mention user">@${escapeHtml(displayName(id))}</span>`;
+  });
+
+  // emoji replacement
+  html = html.replace(/<a?:(\w+):(\d+)>/g, (match, name, id)=>{
+    const emoji = emojis[id];
+    if(emoji){
+      const isAnimated = emoji[2] ? '.gif' : '.png';
+      const emojiUrl = blobURL(emoji[1]);
+      return `<img src="${emojiUrl}" alt=":${name}:" style="height:1.25em;width:1.25em;vertical-align:middle;margin:0 2px;">`;
+    }
+    return match;
+  });
+
+  // URL links
+  html = html.replace(/https?:\/\/[^\s<>)]+/g, (url)=>{
+    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
+  });
+
+  // escape and restore tags
+  return escapeHtml(html)
+    .replace(/&lt;span/g,'<span')
+    .replace(/&lt;\/span&gt;/g,'</span>')
+    .replace(/&lt;a/g,'<a')
+    .replace(/&lt;\/a&gt;/g,'</a>')
+    .replace(/&lt;img/g,'<img')
+    .replace(/&lt;\/img&gt;/g,'</img>')
+    .replace(/&gt;/g,'>');
+}
+
+/* ===== modal functions ===== */
+function openImageModal(src){
+  modalImage.src = src;
+  imageModal.classList.add('active');
+}
+
+function closeImageModal(){
+  imageModal.classList.remove('active');
+  modalImage.src = '';
+}
+
+imageModal.addEventListener('click', (e)=>{
+  if(e.target === imageModal){
+    closeImageModal();
+  }
+});
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){
+    closeImageModal();
+  }
+});
+
+/* ===== load server ===== */
+serverInput.addEventListener('change', async e=>{
+  const buf = await e.target.files[0].arrayBuffer();
+  const data = msgpack.decode(new Uint8Array(buf));
+
+  users = data["Users"] || {};
+  roles = data["Roles"] || {};
+  emojis = data["Emojis"] || {};
+
+  const icon = data["__server_icon__"];
+  if(icon){
+    serverName.textContent = icon[0];
+    if(icon[2]) serverIcon.src = blobURL(icon[2]);
+    serverHeader.style.display = 'flex';
+  }
+});
+
+/* ===== load messages ===== */
+logInput.addEventListener('change', async e=>{
+  const buf = await e.target.files[0].arrayBuffer();
+  messageData = msgpack.decode(new Uint8Array(buf));
+  buildTree();
+});
+
+/* ===== tree ===== */
+function buildTree(){
+  tree.innerHTML='';
+  for(const cat in messageData){
+    const li=document.createElement('li');
+
+    const title=document.createElement('div');
+    title.className='cat-title';
+    title.textContent=cat;
+
+    const ul=document.createElement('ul');
+    ul.className='channels';
+
+    title.onclick=()=>ul.style.display=ul.style.display?'':'block';
+
+    for(const ch in messageData[cat]){
+      const channelLi = document.createElement('li');
+      channelLi.id = `channel-${cat}-${ch}`;
+      
+      const c=document.createElement('div');
+      c.className='channel';
+      const channelData = messageData[cat][ch];
+      const isPrivate = channelData.private === true;
+      
+      const iconWrapper = document.createElement('span');
+      iconWrapper.className = 'channel-icon-wrapper';
+      iconWrapper.textContent = isPrivate ? '🔒' : '';
+      
+      const content = document.createElement('span');
+      content.className = 'channel-content';
+      content.textContent = '# ' + ch;
+      
+      c.appendChild(iconWrapper);
+      c.appendChild(content);
+      c.onclick=(e)=>{
+        renderChannel(e,cat,ch,channelData);
+        showThreadsForChannel(channelLi, channelData, cat, ch);
+      };
+      
+      channelLi.appendChild(c);
+      ul.appendChild(channelLi);
+    }
+
+    li.append(title,ul);
+    tree.appendChild(li);
+  }
+}
+
+/* ===== show threads for selected channel ===== */
+function showThreadsForChannel(channelLi, channelData, cat, ch){
+  console.log('showThreadsForChannel called', {channelLi, channelData, cat, ch});
+  
+  // Remove all existing thread lists
+  document.querySelectorAll('.threads').forEach(el=>el.remove());
+  
+  // Add threads for this channel only
+  if(channelData.threads && Object.keys(channelData.threads).length > 0){
+    console.log('Threads found:', Object.keys(channelData.threads));
+    
+    const threadsUl = document.createElement('ul');
+    threadsUl.className = 'threads';
+    threadsUl.style.display = 'block'; // Force display
+    
+    for(const threadName in channelData.threads){
+      const threadLi = document.createElement('li');
+      threadLi.className = 'thread';
+      threadLi.textContent = '💬 ' + threadName;
+      threadLi.onclick = (e)=>{
+        e.stopPropagation();
+        renderThread(e, cat, ch, threadName, channelData.threads[threadName]);
+      };
+      threadsUl.appendChild(threadLi);
+    }
+    
+    channelLi.appendChild(threadsUl);
+    console.log('Threads list appended to channelLi');
+  } else {
+    console.log('No threads found for this channel');
+  }
+}
+
+/* ===== create reply block ===== */
+function createReplyBlock(m, msgs){
+  if(!m.reply_to || !msgs[m.reply_to]) return null;
+  
+  const repliedMsg = msgs[m.reply_to];
+  const replyDiv = document.createElement('div');
+  replyDiv.className = 'reply-block';
+  
+  const headerDiv = document.createElement('div');
+  headerDiv.className = 'reply-block-header';
+  
+  const line = document.createElement('div');
+  line.className = 'line';
+  headerDiv.appendChild(line);
+  
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'reply-block-content';
+  
+  // Add avatar
+  const repliedUser = users[repliedMsg.author_id];
+  if(repliedUser && repliedUser[2]){
+    const avatarImg = document.createElement('img');
+    avatarImg.className = 'reply-avatar';
+    avatarImg.src = blobURL(repliedUser[2]);
+    contentDiv.appendChild(avatarImg);
+  }
+  
+  const repliedAuthorName = displayName(repliedMsg.author_id);
+  
+  // Determine reply preview text
+  let repliedContent = '';
+  if(repliedMsg.text){
+    repliedContent = repliedMsg.text.substring(0, 100).replace(/\n/g, ' ');
+  } else if(repliedMsg.attachments){
+    repliedContent = '添付ファイル';
+  } else {
+    repliedContent = '';
+  }
+  
+  const textSpan = document.createElement('span');
+  textSpan.innerHTML = `${escapeHtml(repliedAuthorName)}: ${escapeHtml(repliedContent)}${(repliedMsg.text || '').length > 100 ? '...' : ''}`;
+  contentDiv.appendChild(textSpan);
+  
+  replyDiv.appendChild(headerDiv);
+  replyDiv.appendChild(contentDiv);
+  
+  replyDiv.onclick = ()=>{
+    const replyElement = document.querySelector(`[data-msg-id="${m.reply_to}"]`);
+    if(replyElement){
+      replyElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+      replyElement.style.backgroundColor = 'var(--selected)';
+      setTimeout(()=>{ replyElement.style.backgroundColor = ''; }, 2000);
+    }
+  };
+  
+  return replyDiv;
+}
+
+/* ===== create message avatar ===== */
+function createAvatar(m, isFirst){
+  const av = document.createElement('div');
+  av.className = 'avatar';
+  
+  if(isFirst){
+    const u = users[m.author_id];
+    if(u && u[2]){
+      const img = document.createElement('img');
+      img.src = blobURL(u[2]);
+      av.appendChild(img);
+    }
+  } else {
+    const timeStr = new Date(m.ts*1000).toLocaleTimeString('ja-JP', {minute:'2-digit', second:'2-digit'});
+    av.setAttribute('data-time', timeStr);
+  }
+  
+  return av;
+}
+
+/* ===== create message header ===== */
+function createMessageHeader(m){
+  const header = document.createElement('div');
+  header.className = 'msg-header';
+  
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'msg-header-name';
+  nameSpan.textContent = displayName(m.author_id);
+  
+  const u = users[m.author_id];
+  if(u && u[3]){
+    nameSpan.style.color = u[3];
+  }
+  
+  const timeSpan = document.createElement('span');
+  timeSpan.className = 'msg-header-time';
+  timeSpan.textContent = '・ ' + new Date(m.ts*1000).toLocaleString();
+  
+  header.appendChild(nameSpan);
+  header.appendChild(timeSpan);
+  
+  return header;
+}
+
+/* ===== create message content ===== */
+function createMessageContent(m){
+  const cont = document.createElement('div');
+  cont.className = 'content';
+  
+  if(m.type==='text'){
+    // Text content
+    if(m.text){
+      cont.innerHTML = renderMentions(m.text);
+    }
+    
+    // Attachments
+    if(m.attachments){
+      const attachmentsDiv = document.createElement('div');
+      attachmentsDiv.style.marginTop = '8px';
+      
+      for(const a of m.attachments){
+        if(a.content_type && a.content_type.startsWith('image')){
+          const img = document.createElement('img');
+          img.src = blobURL(a.data);
+          img.addEventListener('click', ()=>openImageModal(img.src));
+          attachmentsDiv.appendChild(img);
+        } else {
+          const d = document.createElement('div');
+          d.style.marginTop = '4px';
+          const link = document.createElement('a');
+          link.href = blobURL(a.data);
+          link.download = a.filename;
+          link.textContent = `📄 ${a.filename}`;
+          link.style.textDecoration = 'underline';
+          link.style.cursor = 'pointer';
+          d.appendChild(link);
+          attachmentsDiv.appendChild(d);
+        }
+      }
+      
+      cont.appendChild(attachmentsDiv);
+    }
+  } else if(m.type==='poll'){
+    // Poll text (if any)
+    if(m.text){
+      const textDiv = document.createElement('div');
+      textDiv.innerHTML = renderMentions(m.text);
+      cont.appendChild(textDiv);
+    }
+    
+    const pollDiv = document.createElement('div');
+    pollDiv.className = 'poll';
+    
+    const question = document.createElement('div');
+    question.className = 'poll-question';
+    question.textContent = m.poll.question;
+    pollDiv.appendChild(question);
+    
+    const totalVotes = m.poll.answers.reduce((sum, ans) => sum + ans.votes, 0);
+    
+    for(const answer of m.poll.answers){
+      const answerDiv = document.createElement('div');
+      answerDiv.className = 'poll-answer';
+      
+      const barDiv = document.createElement('div');
+      barDiv.className = 'poll-answer-bar';
+      const percentage = totalVotes > 0 ? (answer.votes / totalVotes * 100) : 0;
+      barDiv.style.width = percentage + '%';
+      answerDiv.appendChild(barDiv);
+      
+      const answerText = document.createElement('div');
+      answerText.className = 'poll-answer-text';
+      answerText.textContent = answer.text;
+      
+      const answerVotes = document.createElement('div');
+      answerVotes.className = 'poll-answer-votes';
+      answerVotes.textContent = `${answer.votes}票 ${Math.round(percentage)}%`;
+      
+      answerDiv.appendChild(answerText);
+      answerDiv.appendChild(answerVotes);
+      pollDiv.appendChild(answerDiv);
+    }
+    
+    cont.appendChild(pollDiv);
+  }
+  
+  return cont;
+}
+
+/* ===== render message group ===== */
+function renderMessageGroup(messages, msgs, container, messageIds = null, includeThreadLink = false, channelData = null, cat = null, ch = null){
+  for(let i = 0; i < messages.length; i++){
+    const m = messages[i];
+    const isFirst = i === 0;
+    
+    const div = document.createElement('div');
+    div.className = 'msg-container ' + (isFirst ? 'group-start' : 'group-item');
+    
+    // Set message ID for navigation
+    if(messageIds && messageIds[i]){
+      div.setAttribute('data-msg-id', messageIds[i]);
+    }
+    
+    // Add reply block
+    if(isFirst && msgs){
+      const replyDiv = createReplyBlock(m, msgs);
+      if(replyDiv) div.appendChild(replyDiv);
+    }
+    
+    // Create wrapper
+    const wrapper = document.createElement('div');
+    wrapper.className = 'msg-content-wrapper';
+    
+    const av = createAvatar(m, isFirst);
+    const body = document.createElement('div');
+    
+    if(isFirst){
+      body.appendChild(createMessageHeader(m));
+    }
+    
+    const cont = createMessageContent(m);
+    body.appendChild(cont);
+    
+    // Add thread link
+    if(includeThreadLink && isFirst && m.thread_title && channelData && channelData.threads && channelData.threads[m.thread_title]){
+      const threadLink = document.createElement('div');
+      threadLink.style.marginTop = '8px';
+      threadLink.style.padding = '8px';
+      threadLink.style.background = 'var(--panel)';
+      threadLink.style.borderRadius = '6px';
+      threadLink.style.cursor = 'pointer';
+      threadLink.style.fontSize = '13px';
+      threadLink.style.color = 'var(--text-2)';
+      threadLink.innerHTML = `💬 スレッド: ${escapeHtml(m.thread_title)}`;
+      threadLink.onclick = ()=>{
+        renderThread({currentTarget: document.querySelector(`.thread`)}, cat, ch, m.thread_title, channelData.threads[m.thread_title]);
+        document.querySelectorAll('.thread').forEach(el=>{
+          if(el.textContent === '💬 ' + m.thread_title){
+            el.classList.add('selected');
+          }
+        });
+      };
+      threadLink.onmouseover = ()=>threadLink.style.background = 'var(--hover)';
+      threadLink.onmouseout = ()=>threadLink.style.background = 'var(--panel)';
+      body.appendChild(threadLink);
+    }
+    
+    wrapper.append(av, body);
+    div.appendChild(wrapper);
+    container.appendChild(div);
+  }
+}
+
+/* ===== render thread ===== */
+function renderThread(ev, cat, ch, threadName, threadMsgs){
+  document.querySelectorAll('.thread').forEach(el=>el.classList.remove('selected'));
+  ev.currentTarget.classList.add('selected');
+
+  threadMessages.innerHTML='';
+  threadTitle.textContent=`💬 ${threadName}`;
+  threadPanel.classList.add('active');
+
+  const threadIds = Object.keys(threadMsgs).sort((a,b)=>threadMsgs[a].ts-threadMsgs[b].ts);
+  
+  // Group thread messages
+  const threadGroups = [];
+  let threadGroup = null;
+  let threadGroupIds = [];
+  
+  for(const mid of threadIds){
+    const m = threadMsgs[mid];
+    if(!threadGroup || 
+       threadGroup[0].author_id !== m.author_id || 
+       (m.ts - threadGroup[threadGroup.length-1].ts) > 7*60){
+      if(threadGroup){
+        threadGroups.push({messages: threadGroup, ids: threadGroupIds});
+      }
+      threadGroup = [m];
+      threadGroupIds = [mid];
+    } else {
+      threadGroup.push(m);
+      threadGroupIds.push(mid);
+    }
+  }
+  if(threadGroup){
+    threadGroups.push({messages: threadGroup, ids: threadGroupIds});
+  }
+  
+  // Render thread messages
+  for(const tgroup of threadGroups){
+    const tgroupDiv = document.createElement('div');
+    tgroupDiv.className = 'msg-group';
+    renderMessageGroup(tgroup.messages, threadMsgs, tgroupDiv, tgroup.ids);
+    threadMessages.appendChild(tgroupDiv);
+  }
+}
+
+/* ===== render channel ===== */
+function renderChannel(ev,cat,ch,data){
+  document.querySelectorAll('.channel').forEach(el=>el.classList.remove('selected'));
+  document.querySelectorAll('.thread').forEach(el=>el.classList.remove('selected'));
+  ev.currentTarget.classList.add('selected');
+
+  messagesEl.innerHTML='';
+  document.getElementById('roomTitle').textContent=ch;
+  currentChannel = data;
+
+  const msgs = data.messages;
+  const ids = Object.keys(msgs).sort((a,b)=>msgs[a].ts-msgs[b].ts);
+
+  // Group messages by author and time
+  const groups = [];
+  let currentGroup = null;
+  let currentGroupIds = [];
+
+  for(const mid of ids){
+    const m = msgs[mid];
+
+    if(!currentGroup || 
+       currentGroup[0].author_id !== m.author_id || 
+       (m.ts - currentGroup[currentGroup.length-1].ts) > 7*60 ||
+       m.reply_to){
+      if(currentGroup){
+        groups.push({messages: currentGroup, ids: currentGroupIds});
+      }
+      currentGroup = [m];
+      currentGroupIds = [mid];
+    } else {
+      currentGroup.push(m);
+      currentGroupIds.push(mid);
+    }
+  }
+  if(currentGroup){
+    groups.push({messages: currentGroup, ids: currentGroupIds});
+  }
+
+  // Render grouped messages
+  for(const group of groups){
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'msg-group';
+    renderMessageGroup(group.messages, msgs, groupDiv, group.ids, true, data, cat, ch);
+    messagesEl.appendChild(groupDiv);
+  }
+}
+
+/* ===== check if message is a reply target ===== */
+function isReplyTarget(msgId, msgs){
+  for(const id in msgs){
+    if(msgs[id].reply_to === msgId){
+      return true;
+    }
+  }
+  return false;
+}
+
+threadClose.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  threadPanel.classList.remove('active');
+  document.querySelectorAll('.thread').forEach(el=>el.classList.remove('selected'));
+});
+</script>
+</body>
+</html>
