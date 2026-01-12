@@ -1144,21 +1144,15 @@ async function loadFromDrive(){
 }
 
 async function fetchDriveFile(fileId){
-  const response = await fetch(GAS_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/plain'
-    },
-    body: JSON.stringify({action: 'getFile', fileId: fileId})
-  });
-
-  const data = await response.json();
-  if(!data.success){
-    throw new Error(data.error);
+  const url = `${GAS_URL}?action=downloadFile&fileId=${fileId}`;
+  
+  try {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    return msgpack.decode(new Uint8Array(arrayBuffer));
+  } catch(err){
+    throw new Error(`ファイル取得失敗: ${err.message}`);
   }
-
-  const bytes = new Uint8Array(atob(data.content).split('').map(c=>c.charCodeAt(0)));
-  return msgpack.decode(bytes);
 }
 </script>
 </body>
