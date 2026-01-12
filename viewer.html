@@ -1056,11 +1056,16 @@ fetchFilesBtn.addEventListener('click', async ()=>{
 
     const response = await fetch(GAS_URL, {
       method: 'POST',
+      mode: 'no-cors',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({action: 'listFiles'})
     });
+
+    if(!response.ok && response.status !== 0){
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
     const data = await response.json();
 
@@ -1071,7 +1076,8 @@ fetchFilesBtn.addEventListener('click', async ()=>{
 
     displayFileList(data.files);
   } catch(err){
-    alert('エラー: ' + err.message);
+    alert('エラー: ' + err.message + '\n\nGAS URLが正しいか確認してください。');
+    console.error('Fetch error:', err);
   } finally {
     fetchFilesBtn.disabled = false;
     fetchFilesBtn.textContent = 'ファイル一覧取得';
@@ -1145,11 +1151,16 @@ async function loadFromDrive(){
 async function fetchDriveFile(fileId){
   const response = await fetch(GAS_URL, {
     method: 'POST',
+    mode: 'no-cors',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({action: 'getFile', fileId: fileId})
   });
+
+  if(!response.ok && response.status !== 0){
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
 
   const data = await response.json();
   if(!data.success){
