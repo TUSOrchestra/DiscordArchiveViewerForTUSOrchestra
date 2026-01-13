@@ -66,7 +66,12 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(
 
 /* main */
 .main{flex:1;display:flex;flex-direction:column;min-width:40vw}
-.topbar{height:30px;padding:12px;border-bottom:1px solid #0002}
+.topbar{height:30px;padding:12px;border-bottom:1px solid #0002;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.topbar-search{display:flex;align-items:center;gap:6px;position:relative}
+.topbar-search input{padding:6px 10px 6px 10px;padding-right:30px;border:1px solid #0002;border-radius:4px;background:var(--bg);color:var(--text);font-size:13px;width:200px}
+.topbar-search input::placeholder{color:var(--text-2)}
+.topbar-search button{display:none}
+.topbar-search::after{content:'🔍';position:absolute;right:8px;pointer-events:none;color:var(--text-2);font-size:14px}
 .messages{flex:1;overflow:auto;padding:12px}
 
 /* thread panel */
@@ -104,11 +109,55 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(
   padding:12px;
 }
 
+/* search panel */
+.search-panel{
+  width:450px;
+  background:var(--panel);
+  display:none;
+  flex-direction:column;
+  border-left:1px solid #0002;
+}
+.search-panel.active{
+  display:flex;
+}
+.search-topbar{
+  height:30px;
+  padding:12px;
+  border-bottom:1px solid #0002;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.search-close{
+  cursor:pointer;
+  font-size:18px;
+  color:var(--text-2);
+  padding:4px 8px;
+  border-radius:4px;
+}
+.search-close:hover{
+  background:var(--hover);
+}
+.search-results{
+  flex:1;
+  overflow:auto;
+  padding:12px;
+}
+.search-result-header{
+  padding:12px 6px 6px 6px;
+  font-weight:600;
+  font-size:13px;
+  color:var(--text-2);
+}
+
 /* message */
 .msg-container{display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:6px}
 .msg-container:hover{background:var(--hover)}
 .msg-content-wrapper{display:flex;gap:10px}
-.avatar img{width:36px;height:36px;border-radius:50%;object-fit:cover}
+.msg-side{display:flex;align-items:center;justify-content:center;width:36px;height:36px}
+.msg-side img{width:36px;height:36px;border-radius:50%;object-fit:cover}
+.msg-side .msg-time{font-size:11px;color:var(--text-2);text-align:center;opacity:0;transition:opacity 0.2s}
+.msg-container:hover .msg-side .msg-time{opacity:1}
 .msg-header{font-size:13px;font-weight:600}
 .msg-header-name{font-size:15px;font-weight:600;margin-right:8px}
 .msg-header-time{font-size:12px;color:var(--text-2)}
@@ -139,7 +188,7 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(
 }
 .reply-block-header .line{
   position:absolute;
-  top:8px;
+  top:7px;
   left:8px;
   width:18px;
   height:10px;
@@ -148,6 +197,10 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(
   border-top:2px solid var(--text-2);
   border-top-left-radius:7px;
   box-sizing:border-box;
+}
+.reply-block:hover .reply-block-header .line{
+  border-left:2px solid var(--text);
+  border-top:2px solid var(--text);
 }
 
 .reply-block-content{
@@ -389,6 +442,9 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(
   <main class="main">
     <div class="topbar">
       <div id="roomTitle">未選択</div>
+      <div class="topbar-search">
+        <input id="searchInput" type="text" placeholder="メッセージを検索...">
+      </div>
     </div>
     <div id="messages" class="messages"></div>
   </main>
@@ -399,6 +455,14 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(
       <div class="thread-close" id="threadClose">✕</div>
     </div>
     <div id="threadMessages" class="thread-messages"></div>
+  </aside>
+
+  <aside class="search-panel" id="searchPanel">
+    <div class="search-topbar">
+      <div id="searchPanelTitle">検索結果</div>
+      <div class="search-close" id="searchClose">✕</div>
+    </div>
+    <div id="searchResults" class="search-results"></div>
   </aside>
 </div>
 
@@ -427,11 +491,18 @@ const threadTitle = document.getElementById('threadTitle');
 const threadMessages = document.getElementById('threadMessages');
 const threadClose = document.getElementById('threadClose');
 
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+const searchPanel = document.getElementById('searchPanel');
+const searchResults = document.getElementById('searchResults');
+const searchClose = document.getElementById('searchClose');
+
 let users = {};
 let roles = {};
 let emojis = {};
 let messageData = null;
 let currentChannel = null;
+let currentChannelIsPrivate = false;
 let selectedFiles = { server: null, messages: null };
 let driveFiles = {};
 
@@ -560,6 +631,7 @@ serverInput.addEventListener('change', async e=>{
     serverName.textContent = icon[0];
     if(icon[2]) serverIcon.src = blobURL(icon[2]);
     serverHeader.style.display = 'flex';
+    searchInput.placeholder = `${icon[0]}を検索`;
   }
 });
 
@@ -712,7 +784,7 @@ function createReplyBlock(m, msgs){
 /* ===== create message avatar ===== */
 function createAvatar(m, isFirst){
   const av = document.createElement('div');
-  av.className = 'avatar';
+  av.className = 'msg-side';
   
   if(isFirst){
     const u = users[m.author_id];
@@ -723,7 +795,10 @@ function createAvatar(m, isFirst){
     }
   } else {
     const timeStr = new Date(m.ts*1000).toLocaleTimeString('ja-JP', {minute:'2-digit', second:'2-digit'});
-    av.setAttribute('data-time', timeStr);
+    const timeEl = document.createElement('div');
+    timeEl.className = 'msg-time';
+    timeEl.textContent = timeStr;
+    av.appendChild(timeEl);
   }
   
   return av;
@@ -761,7 +836,17 @@ function createMessageContent(m){
   if(m.type==='text'){
     // Text content
     if(m.text){
-      cont.innerHTML = renderMentions(m.text);
+      // Check if text is only emojis (30 or less)
+      const emojiOnlyMatch = m.text.match(/<a?:\w+:\d+>|[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu);
+      const isEmojiOnly = emojiOnlyMatch && emojiOnlyMatch.length <= 30 && m.text.replace(/<a?:\w+:\d+>|[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim() === '';
+      
+      const textDiv = document.createElement('div');
+      if(isEmojiOnly){
+        textDiv.style.fontSize = '3em';
+        textDiv.style.lineHeight = '1.2';
+      }
+      textDiv.innerHTML = renderMentions(m.text);
+      cont.appendChild(textDiv);
     }
     
     // Attachments
@@ -953,7 +1038,22 @@ function renderChannel(ev,cat,ch,data){
   ev.currentTarget.classList.add('selected');
 
   messagesEl.innerHTML='';
-  document.getElementById('roomTitle').textContent=ch;
+  const roomTitle = document.getElementById('roomTitle');
+  roomTitle.innerHTML = '';
+  
+  const isPrivate = data.private === true;
+  currentChannelIsPrivate = isPrivate;
+  
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'topbar-icon';
+  iconSpan.textContent = isPrivate ? '🔒#' : '#';
+  
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = ch;
+  
+  roomTitle.appendChild(iconSpan);
+  roomTitle.appendChild(nameSpan);
+  
   currentChannel = data;
 
   const msgs = data.messages;
@@ -1010,8 +1110,121 @@ threadClose.addEventListener('click', (e)=>{
   document.querySelectorAll('.thread').forEach(el=>el.classList.remove('selected'));
 });
 
+/* ===== search function ===== */
+function searchMessages(query){
+  if(!messageData || !query.trim()){
+    searchPanel.classList.remove('active');
+    return;
+  }
+  
+  const searchQuery = query.toLowerCase();
+  const results = [];
+  
+  // Search through all categories and channels
+  for(const cat in messageData){
+    for(const ch in messageData[cat]){
+      const channelData = messageData[cat][ch];
+      const msgs = channelData.messages;
+      
+      for(const msgId in msgs){
+        const m = msgs[msgId];
+        let matchFound = false;
+        
+        // Search in message text
+        if(m.text && m.text.toLowerCase().includes(searchQuery)){
+          matchFound = true;
+        }
+        
+        // Search in author name
+        if(displayName(m.author_id).toLowerCase().includes(searchQuery)){
+          matchFound = true;
+        }
+        
+        if(matchFound){
+          results.push({
+            category: cat,
+            channel: ch,
+            msgId: msgId,
+            message: m,
+            channelData: channelData
+          });
+        }
+      }
+    }
+  }
+  
+  // Display results in search panel
+  searchResults.innerHTML = '';
+  searchPanel.classList.add('active');
+  
+  if(results.length === 0){
+    document.getElementById('searchPanelTitle').textContent = '検索結果：0件';
+    const noResults = document.createElement('div');
+    noResults.style.padding = '12px';
+    noResults.style.color = 'var(--text-2)';
+    noResults.textContent = '検索結果がありません';
+    searchResults.appendChild(noResults);
+    return;
+  }
+  
+  // Update title with result count
+  document.getElementById('searchPanelTitle').textContent = `検索結果：${results.length}件`;
+  
+  // Group results by channel
+  const groupedByChannel = {};
+  for(const result of results){
+    const key = `${result.category}/${result.channel}`;
+    if(!groupedByChannel[key]){
+      groupedByChannel[key] = [];
+    }
+    groupedByChannel[key].push(result);
+  }
+  
+  // Render grouped results
+  for(const channelKey in groupedByChannel){
+    const [cat, ch] = channelKey.split('/');
+    const channelResults = groupedByChannel[channelKey];
+    
+    const channelHeader = document.createElement('div');
+    channelHeader.className = 'search-result-header';
+    channelHeader.innerHTML = `# ${escapeHtml(ch)} (${channelResults.length}件)`;
+    searchResults.appendChild(channelHeader);
+    
+    for(const result of channelResults){
+      const m = result.message;
+      const msgs = result.channelData.messages;
+      
+      const div = document.createElement('div');
+      div.className = 'msg-container';
+      div.style.marginBottom = '8px';
+      
+      const wrapper = document.createElement('div');
+      wrapper.className = 'msg-content-wrapper';
+      
+      const av = createAvatar(m, true);
+      const body = document.createElement('div');
+      body.appendChild(createMessageHeader(m));
+      
+      const cont = createMessageContent(m);
+      body.appendChild(cont);
+      
+      wrapper.append(av, body);
+      div.appendChild(wrapper);
+      searchResults.appendChild(div);
+    }
+  }
+}
 
+searchInput.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){
+    searchMessages(searchInput.value);
+  }
+});
 
+searchClose.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  searchPanel.classList.remove('active');
+});
 </script>
 </body>
 </html>
