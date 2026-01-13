@@ -479,6 +479,7 @@ function createMessageContent(m){
       for(const a of m.attachments){
         if(a.content_type && a.content_type.startsWith('image')){
           const img = document.createElement('img');
+          img.style.cursor = 'zoom-in';
           img.src = blobURL(a.data);
           img.addEventListener('click', ()=>openImageModal(img.src));
           attachmentsDiv.appendChild(img);
