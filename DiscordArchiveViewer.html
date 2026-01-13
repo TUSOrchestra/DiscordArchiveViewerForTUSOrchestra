@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Discord Archive Viewer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="header">
+      <span>Viewer</span>
+      <button id="themeToggle" class="theme-toggle"></button>
+    </div>
+
+    <div class="controls" id="localControls">
+      <label>server.msgpack
+        <input id="serverFile" type="file" accept=".msgpack">
+      </label>
+      <label id="logFileLabel" style="opacity:0.5;pointer-events:none;">messages.msgpack
+        <input id="logFile" type="file" accept=".msgpack" disabled>
+      </label>
+      <div id="loadingStatus" style="display:none;font-size:12px;color:var(--text-2);margin-top:8px;">
+        読み込み中...
+      </div>
+    </div>
+
+    <button id="reloadBtn" class="reload-btn">🔄 新しいファイルを読み込む</button>
+
+    <div id="serverHeader" class="server-header">
+      <img id="serverIcon">
+      <div id="serverName"></div>
+    </div>
+
+    <ul id="tree" class="tree"></ul>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div id="roomTitle">未選択</div>
+      <div class="topbar-search" id="searchBarContainer" style="display:none;">
+        <div class="search-input-wrapper">
+          <div class="search-input-highlight" id="searchHighlight"></div>
+          <input id="searchInput" type="text" placeholder="サーバー内を検索">
+          <span class="search-icon" id="searchIcon">🔍</span>
+        </div>
+        <div id="userSuggestions" class="user-suggestions"></div>
+        <div id="datePicker" class="date-picker"></div>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div id="messages" class="messages"></div>
+      
+      <aside class="thread-panel" id="threadPanel">
+        <div class="thread-topbar">
+          <div id="threadTitle"></div>
+          <div class="thread-close" id="threadClose">✕</div>
+        </div>
+        <div id="threadMessages" class="thread-messages"></div>
+      </aside>
+
+      <aside class="search-panel" id="searchPanel">
+        <div class="search-topbar">
+          <div id="searchPanelTitle">検索結果</div>
+        </div>
+        <div id="searchResults" class="search-results"></div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<div id="imageModal" class="modal">
+  <img id="modalImage" class="modal-content">
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/msgpack-lite@0.1.26/dist/msgpack.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
