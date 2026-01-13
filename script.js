@@ -24,6 +24,7 @@ const searchClose = document.getElementById('searchClose');
 const searchHighlight = document.getElementById('searchHighlight');
 const userSuggestions = document.getElementById('userSuggestions');
 const datePicker = document.getElementById('datePicker');
+const logFileLabel = document.getElementById('logFileLabel');
 
 let users = {};
 let roles = {};
