@@ -182,6 +182,15 @@
 			padding:10px 24px;
 			font-size:14px;
 		}
+		.modal-buttons{
+			display:flex;
+			gap:10px;
+			justify-content:center;
+			margin-top:16px;
+		}
+		.modal-buttons .modal-btn{
+			margin-top:0;
+		}
 	</style>
 </head>
 <body>
@@ -248,7 +257,10 @@
 			<div id="modalTitle" class="modal-title"></div>
 			<div id="modalAnswer" class="modal-answer"></div>
 			<div id="modalDesc" class="modal-desc"></div>
-			<button id="modalCloseBtn" class="modal-btn">次の問題へ</button>
+			<div class="modal-buttons">
+				<button id="modalShareBtn" class="modal-btn">共有</button>
+				<button id="modalCloseBtn" class="modal-btn">次の問題へ</button>
+			</div>
 		</div>
 	</div>
 
@@ -480,6 +492,7 @@
 			modalTitle: document.getElementById('modalTitle'),
 			modalAnswer: document.getElementById('modalAnswer'),
 			modalDesc: document.getElementById('modalDesc'),
+			modalShareBtn: document.getElementById('modalShareBtn'),
 			modalCloseBtn: document.getElementById('modalCloseBtn'),
 		};
 
@@ -818,6 +831,33 @@
 			el.resultModal.style.display = 'none';
 			if(entries.length > 0){
 				startNewGame();
+			}
+		});
+		el.modalShareBtn.addEventListener('click', async () => {
+			const ans = answerChars.join('');
+			const result = over && el.modalTitle.textContent === '正解！' ? '正解' : '不正解';
+			const text = `Word Quiz: ${result}\n答え: ${ans}\n${turn}回で${result === '正解' ? '当てました！' : '終了しました'}`;
+			
+			if(navigator.share){
+				try{
+					await navigator.share({
+						title: 'Word Quiz',
+						text: text,
+						url: location.href
+					});
+				}catch(err){
+					if(err.name !== 'AbortError'){
+						console.error('Share failed:', err);
+					}
+				}
+			} else {
+				// Fallback: copy to clipboard
+				try{
+					await navigator.clipboard.writeText(text);
+					alert('クリップボードにコピーしました');
+				}catch(err){
+					console.error('Copy failed:', err);
+				}
 			}
 		});
 		el.guess.addEventListener('keydown', (e) => {
