@@ -1321,3 +1321,4 @@ searchIcon.addEventListener('click', (e)=>{
     datePicker.style.display = 'none';
   }
 });
+
