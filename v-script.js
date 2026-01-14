@@ -28,7 +28,7 @@ const logFileLabel = document.getElementById('logFileLabel');
 
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
-const sidebarClose = document.getElementById('sidebarClose');
+const sidebarCloseBtn = document.getElementById('sidebarClose');
 const menuToggleMobile = document.getElementById('menuToggleMobile');
 
 let users = {};
@@ -54,7 +54,7 @@ function closeSidebar(){
 }
 
 menuToggleMobile.addEventListener('click', openSidebar);
-sidebarClose.addEventListener('click', closeSidebar);
+sidebarCloseBtn.addEventListener('click', closeSidebar);
 sidebarOverlay.addEventListener('click', closeSidebar);
 
 /* ===== theme toggle ===== */

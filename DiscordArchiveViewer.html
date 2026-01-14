@@ -6,16 +6,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="v-styles.css">
 </head>
 
 <body>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="app">
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="header">
       <span>Viewer</span>
-      <button id="themeToggle" class="theme-toggle"></button>
+      <div class="header-buttons">
+        <button id="themeToggle" class="theme-toggle"></button>
+        <button id="sidebarClose" class="sidebar-close">✕</button>
+      </div>
     </div>
 
     <div class="controls" id="localControls">
@@ -42,7 +45,7 @@
 
   <main class="main">
     <div class="topbar">
-      <button id="sidebarToggle" class="sidebar-toggle">☰</button>
+      <button id="menuToggleMobile" class="menu-toggle-mobile">☰</button>
       <div id="roomTitle">未選択</div>
       <div class="topbar-search" id="searchBarContainer" style="display:none;">
         <div class="search-input-wrapper">
@@ -83,6 +86,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/msgpack-lite@0.1.26/dist/msgpack.min.js"></script>
-<script src="script.js"></script>
+<script src="v-script.js"></script>
 </body>
 </html>
