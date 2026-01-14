@@ -77,13 +77,14 @@
 			color:var(--text);
 			outline:none;
 			font-size:14px;
+			text-transform:lowercase;
 		}
 		.guessbar input[type="text"]:focus{border-color:var(--focus);box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent)}
 		.msg{margin-top:10px;font-size:13px;color:var(--muted)}
 		.msg.error{color:#fca5a5}
 		.msg.success{color:#86efac}
 
-		.kbd{
+		.cell{
 			margin-top:10px;
 			display:grid;
 			gap:6px;
@@ -92,7 +93,7 @@
 		.kbd-row{display:flex;gap:6px;flex-wrap:wrap}
 		.k{
 			min-width:34px;
-			padding:8px 10px;
+			text-transform:none;
 			border-radius:10px;
 			border:1px solid var(--line);
 			background:#0c0f15;
@@ -202,7 +203,6 @@
 					i++;
 					continue;
 				}
-
 				if(c === '"'){
 					inQuotes = true;
 					i++;
@@ -238,8 +238,19 @@
 		}
 
 		function normalizeWord(s){
-			// Keep as-is except trimming. Use uppercase for Latin letters.
-			return String(s ?? '').trim().toUpperCase();
+			// Keep as-is except trimming. Use lowercase for Latin letters.
+			return String(s ?? '').trim().toLowerCase();
+		}
+
+		function insertAtCursor(inputEl, text){
+			const start = inputEl.selectionStart ?? inputEl.value.length;
+			const end = inputEl.selectionEnd ?? inputEl.value.length;
+			const before = inputEl.value.slice(0, start);
+			const after = inputEl.value.slice(end);
+			inputEl.value = before + text + after;
+			const nextPos = start + text.length;
+			inputEl.setSelectionRange(nextPos, nextPos);
+			inputEl.dispatchEvent(new Event('input', { bubbles: true }));
 		}
 
 		/** Wordle scoring with duplicates handling */
@@ -320,9 +331,9 @@
 
 		function renderKeyboard(){
 			const rows = [
-				['Q','W','E','R','T','Y','U','I','O','P'],
-				['A','S','D','F','G','H','J','K','L'],
-				['ENTER','Z','X','C','V','B','N','M','BKSP'],
+				['q','w','e','r','t','y','u','i','o','p'],
+				['a','s','d','f','g','h','j','k','l'],
+				['ENTER','z','x','c','v','b','n','m','BKSP'],
 			];
 			const targets = [el.kbd1, el.kbd2, el.kbd3];
 			targets.forEach(t => t.innerHTML = '');
@@ -565,6 +576,28 @@
 			if(e.key === 'Enter'){
 				e.preventDefault();
 				submitGuess();
+				return;
+			}
+
+			// Shift + a/o/u/s => ã/ö/ü/ß
+			if(e.shiftKey){
+				const k = String(e.key ?? '');
+				const base = k.length === 1 ? k.toLowerCase() : k;
+				const map = { a: 'ã', o: 'ö', u: 'ü', s: 'ß' };
+				if(map[base]){
+					e.preventDefault();
+					insertAtCursor(el.guess, map[base]);
+					return;
+				}
+			}
+		});
+
+		el.guess.addEventListener('input', () => {
+			if(el.guess.disabled) return;
+			const normalized = normalizeWord(el.guess.value);
+			const limited = toGraphemes(normalized).slice(0, answerChars.length).join('');
+			if(el.guess.value !== limited){
+				el.guess.value = limited;
 			}
 		});
 		document.addEventListener('keydown', (e) => {
@@ -581,6 +614,5 @@
 	</script>
 </body>
 </html>
-
 
 
