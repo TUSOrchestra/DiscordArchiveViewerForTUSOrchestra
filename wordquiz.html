@@ -182,13 +182,14 @@
 			padding:10px 24px;
 			font-size:14px;
 		}
-		.modal-buttons{
+		.modal-btns{
 			display:flex;
 			gap:10px;
 			justify-content:center;
+			flex-wrap:wrap;
 			margin-top:16px;
 		}
-		.modal-buttons .modal-btn{
+		.modal-btns .modal-btn{
 			margin-top:0;
 		}
 	</style>
@@ -257,8 +258,8 @@
 			<div id="modalTitle" class="modal-title"></div>
 			<div id="modalAnswer" class="modal-answer"></div>
 			<div id="modalDesc" class="modal-desc"></div>
-			<div class="modal-buttons">
-				<button id="modalShareBtn" class="modal-btn">共有</button>
+			<div class="modal-btns">
+				<button id="modalShareBtn" class="modal-btn">📝 共有</button>
 				<button id="modalCloseBtn" class="modal-btn">次の問題へ</button>
 			</div>
 		</div>
@@ -503,6 +504,7 @@
 		let maxTries = 6;
 		let turn = 0;
 		let over = false;
+		let lastResult = null; // { success, answer, description, turns, maxTries }
 		const keyState = new Map(); // letter -> ok/hit/no
 
 		function setStatus(text){
@@ -693,6 +695,15 @@
 			const ans = answerChars.join('');
 			el.left.textContent = '0';
 
+			// Store result for sharing
+			lastResult = {
+				success,
+				answer: ans,
+				description: current?.description ?? '',
+				turns: turn,
+				maxTries
+			};
+
 			// Show result modal
 			if(el.resultModal){
 				el.modalTitle.textContent = success ? '正解！' : '終了';
@@ -834,33 +845,24 @@
 			}
 		});
 		el.modalShareBtn.addEventListener('click', async () => {
-			const ans = answerChars.join('');
-			const result = over && el.modalTitle.textContent === '正解！' ? '正解' : '不正解';
-			const text = `Word Quiz: ${result}\n答え: ${ans}\n${turn}回で${result === '正解' ? '当てました！' : '終了しました'}`;
+			if(!lastResult) return;
+			const emoji = lastResult.success ? '🎉' : '😢';
+			const status = lastResult.success ? `${lastResult.turns}/${lastResult.maxTries}回で正解！` : `不正解...答え: ${lastResult.answer}`;
+			const shareText = `${emoji} Word Quiz ${emoji}\n${status}\n説明: ${lastResult.description}`;
 			
-			if(navigator.share){
-				try{
-                    console.log('Sharing via Web Share API');
-					await navigator.share({
-						title: 'Word Quiz',
-						text: text,
-						url: location.href
-					});
-				}catch(err){
-					if(err.name !== 'AbortError'){
-						console.error('Share failed:', err);
-					}
-				}
-			} else {
-				// Fallback: copy to clipboard
-				try{
-                    console.log('Copying to clipboard');
-					await navigator.clipboard.writeText(text);
-					alert('クリップボードにコピーしました');
-				}catch(err){
-					console.error('Copy failed:', err);
-				}
+			try {
+				await navigator.clipboard.writeText(shareText);
+				el.modalShareBtn.textContent = '✅ コピーしました';
+				setTimeout(() => {
+					el.modalShareBtn.textContent = '📝 共有';
+				}, 2000);
+			} catch(e) {
+				console.error('Clipboard copy failed', e);
 			}
+			
+			// Open Discord channel (replace with your channel URL)
+			const discordChannelUrl = 'https://discord.com/channels/1181531577373696090/1383762455783542994/@me';
+			window.open(discordChannelUrl, '_blank');
 		});
 		el.guess.addEventListener('keydown', (e) => {
 			if(candidateState){
