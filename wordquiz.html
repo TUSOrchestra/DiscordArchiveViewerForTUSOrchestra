@@ -140,6 +140,48 @@
 		.footer code{background:#0c0f15;border:1px solid var(--line);padding:2px 6px;border-radius:6px;color:var(--text)}
 		#rulePanel label{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--text);cursor:pointer}
 		#rulePanel input[type="checkbox"]{accent-color:var(--focus);width:16px;height:16px}
+		.modal-overlay{
+			position:fixed;
+			top:0;left:0;right:0;bottom:0;
+			background:rgba(0,0,0,0.7);
+			display:flex;
+			align-items:center;
+			justify-content:center;
+			z-index:1000;
+		}
+		.modal-content{
+			background:var(--panel);
+			border:1px solid var(--line);
+			border-radius:16px;
+			padding:24px 32px;
+			max-width:400px;
+			width:90%;
+			text-align:center;
+		}
+		.modal-title{
+			font-size:20px;
+			font-weight:700;
+			margin-bottom:12px;
+		}
+		.modal-title.success{color:#86efac}
+		.modal-title.error{color:#fca5a5}
+		.modal-answer{
+			font-size:28px;
+			font-weight:800;
+			margin:12px 0;
+			letter-spacing:0.05em;
+		}
+		.modal-desc{
+			font-size:14px;
+			color:var(--muted);
+			line-height:1.6;
+			margin:12px 0;
+		}
+		.modal-btn{
+			margin-top:16px;
+			padding:10px 24px;
+			font-size:14px;
+		}
 	</style>
 </head>
 <body>
@@ -198,6 +240,15 @@
 					- 文字数はCSVの <code>word</code> に合わせて自動調整
 				</div>
 			</div>
+		</div>
+	</div>
+
+	<div id="resultModal" class="modal-overlay" style="display:none">
+		<div class="modal-content">
+			<div id="modalTitle" class="modal-title"></div>
+			<div id="modalAnswer" class="modal-answer"></div>
+			<div id="modalDesc" class="modal-desc"></div>
+			<button id="modalCloseBtn" class="modal-btn">次の問題へ</button>
 		</div>
 	</div>
 
@@ -425,6 +476,11 @@
 			kbd2: document.getElementById('kbd2'),
 			kbd3: document.getElementById('kbd3'),
             kbd4: document.getElementById('kbd4'),
+			resultModal: document.getElementById('resultModal'),
+			modalTitle: document.getElementById('modalTitle'),
+			modalAnswer: document.getElementById('modalAnswer'),
+			modalDesc: document.getElementById('modalDesc'),
+			modalCloseBtn: document.getElementById('modalCloseBtn'),
 		};
 
 		let allEntries = []; // {word, description, abbreviation, difficulty}
@@ -622,12 +678,16 @@
 			over = true;
 			enableGameUI(false);
 			const ans = answerChars.join('');
-			if(success){
-				setMsg('正解！', 'success');
-			} else {
-				setMsg(`終了。答え: ${ans}`, 'error');
-			}
 			el.left.textContent = '0';
+
+			// Show result modal
+			if(el.resultModal){
+				el.modalTitle.textContent = success ? '正解！' : '終了';
+				el.modalTitle.className = 'modal-title ' + (success ? 'success' : 'error');
+				el.modalAnswer.textContent = ans;
+				el.modalDesc.textContent = current?.description ?? '';
+				el.resultModal.style.display = '';
+			}
 		}
 
 		function submitGuess(){
@@ -753,6 +813,12 @@
 		el.giveUpBtn.addEventListener('click', () => {
 			if(over) return;
 			endGame(false);
+		});
+		el.modalCloseBtn.addEventListener('click', () => {
+			el.resultModal.style.display = 'none';
+			if(entries.length > 0){
+				startNewGame();
+			}
 		});
 		el.guess.addEventListener('keydown', (e) => {
 			if(candidateState){
