@@ -82,13 +82,18 @@
 		.guessbar input[type="text"]:focus{border-color:var(--focus);box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent)}
 		.candidates{
 			margin-top:10px;
-			display:flex;
+			display:block;
+		}
+		.cand-list{
+			margin:0;
+			padding:0;
+			list-style:none;
+			display:grid;
 			gap:6px;
-			flex-wrap:wrap;
-			align-items:center;
+			max-width:260px;
 		}
 		.cand{
-			min-width:40px;
+			width:100%;
 			padding:8px 10px;
 			border-radius:10px;
 			border:1px solid var(--line);
@@ -291,7 +296,16 @@
 		function renderCandidates(){
 			if(!candidateState || !el.candidates) return;
 			el.candidates.innerHTML = '';
+
+			const list = document.createElement('ul');
+			list.className = 'cand-list';
+			list.setAttribute('role', 'listbox');
+
 			candidateState.options.forEach((opt, idx) => {
+				const li = document.createElement('li');
+				li.setAttribute('role', 'option');
+				li.setAttribute('aria-selected', String(idx === candidateState.index));
+
 				const b = document.createElement('div');
 				b.className = 'cand' + (idx === candidateState.index ? ' sel' : '');
 				b.textContent = opt;
@@ -303,8 +317,12 @@
 					if(el.guess.disabled) return;
 					commitCandidate(idx);
 				});
-				el.candidates.appendChild(b);
+
+				li.appendChild(b);
+				list.appendChild(li);
 			});
+
+			el.candidates.appendChild(list);
 		}
 
 		function showCandidates(options, preferredIndex = 0){
@@ -699,10 +717,13 @@
 				const k = String(e.key ?? '');
 				const base = k.length === 1 ? k.toLowerCase() : k;
 				const map = {
-					a: ['ã', 'a'],
-					o: ['ö', 'o'],
-					u: ['ü', 'u'],
+					a: ['ä','à','â', 'a'],
+					e: ['ë','é','è','ê', 'e'],
+					i: ['ï','î', 'i'],
+					o: ['ö','ô', 'o'],
+					u: ['ü','ù','û', 'u'],
 					s: ['ß', 's'], // ß is default for Shift+S
+					c: ['ç', 'c'],
 				};
 				if(map[base]){
 					e.preventDefault();
