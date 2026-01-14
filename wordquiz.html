@@ -59,7 +59,7 @@
 			display:flex;align-items:center;justify-content:center;
 			font-weight:800;
 			letter-spacing:.02em;
-			text-transform:uppercase;
+			text-transform:none;
 			user-select:none;
 		}
 		.cell.ok{background:color-mix(in srgb, var(--ok) 35%, var(--cell));border-color:color-mix(in srgb, var(--ok) 70%, var(--line))}
@@ -84,7 +84,7 @@
 		.msg.error{color:#fca5a5}
 		.msg.success{color:#86efac}
 
-		.cell{
+		.kbd{
 			margin-top:10px;
 			display:grid;
 			gap:6px;
@@ -93,13 +93,13 @@
 		.kbd-row{display:flex;gap:6px;flex-wrap:wrap}
 		.k{
 			min-width:34px;
-			text-transform:none;
+			padding:8px 10px;
 			border-radius:10px;
 			border:1px solid var(--line);
 			background:#0c0f15;
 			color:var(--text);
 			font-size:12px;
-			text-transform:uppercase;
+			text-transform:none;
 			text-align:center;
 			user-select:none;
 			cursor:pointer;
@@ -142,7 +142,7 @@
 				<div id="grid" class="grid" aria-label="guesses"></div>
 
 				<div class="guessbar">
-					<input id="guess" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ここに入力してEnter" disabled />
+					<input id="guess" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ここに入力してEnter" disabled />
 					<button id="submitBtn" disabled>判定</button>
 					<button id="giveUpBtn" disabled>ギブアップ</button>
 				</div>
