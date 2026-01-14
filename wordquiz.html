@@ -80,6 +80,29 @@
 			text-transform:lowercase;
 		}
 		.guessbar input[type="text"]:focus{border-color:var(--focus);box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent)}
+		.candidates{
+			margin-top:10px;
+			display:flex;
+			gap:6px;
+			flex-wrap:wrap;
+			align-items:center;
+		}
+		.cand{
+			min-width:40px;
+			padding:8px 10px;
+			border-radius:10px;
+			border:1px solid var(--line);
+			background:#0c0f15;
+			color:var(--text);
+			font-size:13px;
+			text-align:center;
+			user-select:none;
+			cursor:pointer;
+		}
+		.cand.sel{
+			border-color:var(--focus);
+			box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
+		}
 		.msg{margin-top:10px;font-size:13px;color:var(--muted)}
 		.msg.error{color:#fca5a5}
 		.msg.success{color:#86efac}
@@ -146,6 +169,7 @@
 					<button id="submitBtn" disabled>判定</button>
 					<button id="giveUpBtn" disabled>ギブアップ</button>
 				</div>
+				<div id="candidates" class="candidates" style="display:none" aria-label="candidates"></div>
 				<div id="msg" class="msg"></div>
 
 				<div class="kbd" aria-label="keyboard">
@@ -254,6 +278,66 @@
 			inputEl.dispatchEvent(new Event('input', { bubbles: true }));
 		}
 
+		let candidateState = null; // { options: string[], index: number }
+
+		function hideCandidates(){
+			candidateState = null;
+			if(el.candidates){
+				el.candidates.style.display = 'none';
+				el.candidates.innerHTML = '';
+			}
+		}
+
+		function renderCandidates(){
+			if(!candidateState || !el.candidates) return;
+			el.candidates.innerHTML = '';
+			candidateState.options.forEach((opt, idx) => {
+				const b = document.createElement('div');
+				b.className = 'cand' + (idx === candidateState.index ? ' sel' : '');
+				b.textContent = opt;
+				b.addEventListener('mousedown', (e) => {
+					// prevent input blur
+					e.preventDefault();
+				});
+				b.addEventListener('click', () => {
+					if(el.guess.disabled) return;
+					commitCandidate(idx);
+				});
+				el.candidates.appendChild(b);
+			});
+		}
+
+		function showCandidates(options, preferredIndex = 0){
+			if(!el.candidates) return;
+			candidateState = {
+				options: options.map(v => normalizeWord(v)),
+				index: Math.max(0, Math.min(options.length - 1, preferredIndex)),
+			};
+			renderCandidates();
+			el.candidates.style.display = '';
+		}
+
+		function cycleCandidate(delta){
+			if(!candidateState) return;
+			const n = candidateState.options.length;
+			candidateState.index = (candidateState.index + delta + n) % n;
+			renderCandidates();
+		}
+
+		function commitCandidate(indexOverride = null){
+			if(!candidateState) return;
+			const idx = indexOverride == null ? candidateState.index : indexOverride;
+			const ch = candidateState.options[idx];
+			hideCandidates();
+			const currentValue = normalizeWord(el.guess.value);
+			if(toGraphemes(currentValue).length >= answerChars.length){
+				el.guess.focus();
+				return;
+			}
+			insertAtCursor(el.guess, ch);
+			el.guess.focus();
+		}
+
 		/** Wordle scoring with duplicates handling */
 		function scoreGuess(answerChars, guessChars){
 			const n = answerChars.length;
@@ -297,6 +381,7 @@
 			submitBtn: document.getElementById('submitBtn'),
 			giveUpBtn: document.getElementById('giveUpBtn'),
 			msg: document.getElementById('msg'),
+			candidates: document.getElementById('candidates'),
 			kbd1: document.getElementById('kbd1'),
 			kbd2: document.getElementById('kbd2'),
 			kbd3: document.getElementById('kbd3'),
@@ -334,9 +419,9 @@
 		function renderKeyboard(){
 			const rows = [
 				['q','w','e','r','t','y','u','i','o','p'],
-				['a','s','d','f','g','h','j','k','l'],
-				['z','x','c','v','b','n','m'],
-                ['ENTER','ä','ö','ü','ß','BKSP'],
+				['a','s','d','f','g','h','j','k','l','BKSP'],
+				['z','x','c','v','b','n','m','ENTER'],
+                ['ä','ö','ü','ë','ï','ß','é','è','à','ù','â','ê','î','ô','û','ç','\'','-'],
 			];
 			const targets = [el.kbd1, el.kbd2, el.kbd3, el.kbd4];
 			targets.forEach(t => t.innerHTML = '');
@@ -576,20 +661,52 @@
 			endGame(false);
 		});
 		el.guess.addEventListener('keydown', (e) => {
+			if(candidateState){
+				if(e.key === 'Tab'){
+					e.preventDefault();
+					cycleCandidate(e.shiftKey ? -1 : 1);
+					return;
+				}
+				if(String(e.key).startsWith('Arrow')){
+					e.preventDefault();
+					const k = String(e.key);
+					if(k === 'ArrowLeft' || k === 'ArrowUp') cycleCandidate(-1);
+					else cycleCandidate(1);
+					return;
+				}
+				if(e.key === 'Enter'){
+					e.preventDefault();
+					commitCandidate();
+					return;
+				}
+				if(e.key === 'Escape'){
+					e.preventDefault();
+					hideCandidates();
+					return;
+				}
+				// Any other key closes candidate UI
+				hideCandidates();
+			}
+
 			if(e.key === 'Enter'){
 				e.preventDefault();
 				submitGuess();
 				return;
 			}
 
-			// Shift + a/o/u/s => ã/ö/ü/ß
+			// Shift + a/o/u/s => show candidates (Tab / arrows / Enter / click to choose)
 			if(e.shiftKey){
 				const k = String(e.key ?? '');
 				const base = k.length === 1 ? k.toLowerCase() : k;
-				const map = { a: 'ã', o: 'ö', u: 'ü', s: 'ß' };
+				const map = {
+					a: ['ã', 'a'],
+					o: ['ö', 'o'],
+					u: ['ü', 'u'],
+					s: ['ß', 's'], // ß is default for Shift+S
+				};
 				if(map[base]){
 					e.preventDefault();
-					insertAtCursor(el.guess, map[base]);
+					showCandidates(map[base], 0);
 					return;
 				}
 			}
@@ -611,12 +728,15 @@
 			if(document.activeElement !== el.guess) el.guess.focus();
 		});
 
+		el.guess.addEventListener('blur', () => {
+			hideCandidates();
+		});
+
 			renderKeyboard();
 			// GitHub Pages向け: 初回は自動で quizzes.csv を読み込む
 			handleLoad();
 	</script>
 </body>
 </html>
-
 
 
