@@ -230,7 +230,7 @@
 				<div id="grid" class="grid" aria-label="guesses"></div>
 
 				<div class="guessbar">
-					<input id="guess" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ここに入力してEnter" disabled />
+					<input id="guess" type="text" inputmode="latin" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ここに入力してEnter" disabled />
 					<button id="submitBtn" disabled>判定</button>
 					<button id="giveUpBtn" disabled>ギブアップ</button>
 				</div>
@@ -506,6 +506,14 @@
 		let over = false;
 		let lastResult = null; // { success, answer, description, turns, maxTries }
 		const keyState = new Map(); // letter -> ok/hit/no
+		
+		// Allowed characters (must match on-screen keyboard)
+		const ALLOWED_CHARS = new Set([
+			'q','w','e','r','t','y','u','i','o','p',
+			'a','s','d','f','g','h','j','k','l',
+			'z','x','c','v','b','n','m',
+			'ä','ö','ü','ë','ï','ß','é','è','à','ù','â','ê','î','ô','û','ç',"'",'-'
+		]);
 
 		function setStatus(text){
 			el.status.textContent = text;
@@ -924,8 +932,10 @@
 
 		el.guess.addEventListener('input', () => {
 			if(el.guess.disabled) return;
-			const normalized = normalizeWord(el.guess.value);
-			const limited = toGraphemes(normalized).slice(0, answerChars.length).join('');
+			// Filter to only allowed characters
+			const chars = toGraphemes(el.guess.value.toLowerCase());
+			const filtered = chars.filter(ch => ALLOWED_CHARS.has(ch));
+			const limited = filtered.slice(0, answerChars.length).join('');
 			if(el.guess.value !== limited){
 				el.guess.value = limited;
 			}
