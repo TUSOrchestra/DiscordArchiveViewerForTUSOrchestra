@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>Word Quiz (CSV Wordle)</title>
+	<style>
+		:root{
+			--bg:#0f1115;
+			--panel:#171a21;
+			--text:#e8eaf0;
+			--muted:#9aa3b2;
+			--line:#2a2f3a;
+			--ok:#2ea043;
+			--hit:#d29922;
+			--no:#6b7280;
+			--cell:#11141b;
+			--cellText:#e8eaf0;
+			--focus:#3b82f6;
+		}
+		*{box-sizing:border-box}
+		body{margin:0;font-family:system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;background:var(--bg);color:var(--text)}
+		.wrap{max-width:920px;margin:0 auto;padding:20px}
+		h1{font-size:20px;margin:0 0 12px 0}
+		.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+		.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+		.row + .row{margin-top:10px}
+		label{font-size:13px;color:var(--muted)}
+		input[type="file"]{color:var(--text)}
+		button{
+			background:#232838;
+			color:var(--text);
+			border:1px solid var(--line);
+			border-radius:10px;
+			padding:8px 12px;
+			cursor:pointer;
+			font-size:13px;
+		}
+		button:hover{border-color:#3a4252}
+		button:disabled{opacity:.5;cursor:not-allowed}
+		.status{font-size:13px;color:var(--muted)}
+		.hint{font-size:13px;color:var(--text);line-height:1.5}
+		.hint b{color:var(--muted);font-weight:600}
+
+		.game{margin-top:14px}
+		.meta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+		.meta .left{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+		.pill{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#121520}
+		.pill strong{color:var(--text);font-weight:700}
+
+		.grid{margin-top:12px;display:grid;gap:8px;justify-content:flex-start}
+		.grid-row{display:grid;gap:8px}
+		.cell{
+			width:42px;height:42px;
+			border-radius:10px;
+			border:1px solid var(--line);
+			background:var(--cell);
+			color:var(--cellText);
+			display:flex;align-items:center;justify-content:center;
+			font-weight:800;
+			letter-spacing:.02em;
+			text-transform:uppercase;
+			user-select:none;
+		}
+		.cell.ok{background:color-mix(in srgb, var(--ok) 35%, var(--cell));border-color:color-mix(in srgb, var(--ok) 70%, var(--line))}
+		.cell.hit{background:color-mix(in srgb, var(--hit) 35%, var(--cell));border-color:color-mix(in srgb, var(--hit) 70%, var(--line))}
+		.cell.no{background:color-mix(in srgb, var(--no) 35%, var(--cell));border-color:color-mix(in srgb, var(--no) 70%, var(--line))}
+
+		.guessbar{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+		.guessbar input[type="text"]{
+			width:260px;
+			max-width:100%;
+			padding:10px 12px;
+			border-radius:10px;
+			border:1px solid var(--line);
+			background:#0c0f15;
+			color:var(--text);
+			outline:none;
+			font-size:14px;
+		}
+		.guessbar input[type="text"]:focus{border-color:var(--focus);box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent)}
+		.msg{margin-top:10px;font-size:13px;color:var(--muted)}
+		.msg.error{color:#fca5a5}
+		.msg.success{color:#86efac}
+
+		.kbd{
+			margin-top:10px;
+			display:grid;
+			gap:6px;
+			max-width:620px;
+		}
+		.kbd-row{display:flex;gap:6px;flex-wrap:wrap}
+		.k{
+			min-width:34px;
+			padding:8px 10px;
+			border-radius:10px;
+			border:1px solid var(--line);
+			background:#0c0f15;
+			color:var(--text);
+			font-size:12px;
+			text-transform:uppercase;
+			text-align:center;
+			user-select:none;
+			cursor:pointer;
+		}
+		.k.ok{background:color-mix(in srgb, var(--ok) 25%, #0c0f15)}
+		.k.hit{background:color-mix(in srgb, var(--hit) 25%, #0c0f15)}
+		.k.no{background:color-mix(in srgb, var(--no) 25%, #0c0f15)}
+		.k.wide{min-width:78px}
+		.footer{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.6}
+		.footer code{background:#0c0f15;border:1px solid var(--line);padding:2px 6px;border-radius:6px;color:var(--text)}
+	</style>
+</head>
+<body>
+	<div class="wrap">
+		<h1>Word Quiz（CSV Wordle）</h1>
+
+		<div class="panel">
+			<div class="row">
+				<div style="min-width:260px">
+					<label>CSV（同階層の <code>quiz.csv</code> を読み込み）</label><br />
+					<span class="status"><code>quiz.csv</code> を自動で読み込みます</span>
+				</div>
+				<button id="loadBtn">quiz.csv を読み込む</button>
+				<button id="newBtn" disabled>新しい問題</button>
+				<span id="status" class="status">quiz.csv 未読込</span>
+			</div>
+			<div class="row">
+				<div id="hint" class="hint" style="display:none"></div>
+			</div>
+
+			<div class="game" id="game" style="display:none">
+				<div class="meta">
+					<div class="left">
+						<div class="pill">文字数: <strong id="len">-</strong></div>
+						<div class="pill">残り: <strong id="left">-</strong></div>
+					</div>
+					<div class="pill">ヒント: <span style="color:var(--muted)">description を表示中</span></div>
+				</div>
+
+				<div id="grid" class="grid" aria-label="guesses"></div>
+
+				<div class="guessbar">
+					<input id="guess" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ここに入力してEnter" disabled />
+					<button id="submitBtn" disabled>判定</button>
+					<button id="giveUpBtn" disabled>ギブアップ</button>
+				</div>
+				<div id="msg" class="msg"></div>
+
+				<div class="kbd" aria-label="keyboard">
+					<div class="kbd-row" id="kbd1"></div>
+					<div class="kbd-row" id="kbd2"></div>
+					<div class="kbd-row" id="kbd3"></div>
+				</div>
+
+				<div class="footer">
+					- ルールはWordle同様（位置も一致=緑、含まれる=黄、含まれない=灰）
+					<br />
+					- 文字数はCSVの <code>word</code> に合わせて自動調整
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		/**
+		 * Minimal CSV parser (supports quoted fields and commas/newlines inside quotes).
+		 */
+		function parseCsv(text){
+			const rows = [];
+			let row = [];
+			let field = '';
+			let i = 0;
+			let inQuotes = false;
+
+			const pushField = () => {
+				row.push(field);
+				field = '';
+			};
+			const pushRow = () => {
+				// ignore completely empty trailing lines
+				const allEmpty = row.every(v => (v ?? '').trim() === '');
+				if(!allEmpty) rows.push(row);
+				row = [];
+			};
+
+			while(i < text.length){
+				const c = text[i];
+				if(inQuotes){
+					if(c === '"'){
+						const next = text[i+1];
+						if(next === '"'){ // escaped quote
+							field += '"';
+							i += 2;
+							continue;
+						}
+						inQuotes = false;
+						i++;
+						continue;
+					}
+					field += c;
+					i++;
+					continue;
+				}
+
+				if(c === '"'){
+					inQuotes = true;
+					i++;
+					continue;
+				}
+				if(c === ','){
+					pushField();
+					i++;
+					continue;
+				}
+				if(c === '\r'){
+					// ignore CR
+					i++;
+					continue;
+				}
+				if(c === '\n'){
+					pushField();
+					pushRow();
+					i++;
+					continue;
+				}
+				field += c;
+				i++;
+			}
+			pushField();
+			pushRow();
+			return rows;
+		}
+
+		function toGraphemes(s){
+			// Best-effort: spread by code points. (Good enough for English and most inputs.)
+			return [...String(s ?? '')];
+		}
+
+		function normalizeWord(s){
+			// Keep as-is except trimming. Use uppercase for Latin letters.
+			return String(s ?? '').trim().toUpperCase();
+		}
+
+		/** Wordle scoring with duplicates handling */
+		function scoreGuess(answerChars, guessChars){
+			const n = answerChars.length;
+			const res = Array(n).fill('no');
+			const counts = new Map();
+			for(let i=0;i<n;i++){
+				const a = answerChars[i];
+				counts.set(a, (counts.get(a) ?? 0) + 1);
+			}
+
+			// First pass: exact matches
+			for(let i=0;i<n;i++){
+				if(guessChars[i] === answerChars[i]){
+					res[i] = 'ok';
+					counts.set(answerChars[i], counts.get(answerChars[i]) - 1);
+				}
+			}
+			// Second pass: present elsewhere
+			for(let i=0;i<n;i++){
+				if(res[i] === 'ok') continue;
+				const g = guessChars[i];
+				const left = counts.get(g) ?? 0;
+				if(left > 0){
+					res[i] = 'hit';
+					counts.set(g, left - 1);
+				}
+			}
+			return res;
+		}
+
+			const el = {
+			loadBtn: document.getElementById('loadBtn'),
+			newBtn: document.getElementById('newBtn'),
+			status: document.getElementById('status'),
+			hint: document.getElementById('hint'),
+			game: document.getElementById('game'),
+			len: document.getElementById('len'),
+			left: document.getElementById('left'),
+			grid: document.getElementById('grid'),
+			guess: document.getElementById('guess'),
+			submitBtn: document.getElementById('submitBtn'),
+			giveUpBtn: document.getElementById('giveUpBtn'),
+			msg: document.getElementById('msg'),
+			kbd1: document.getElementById('kbd1'),
+			kbd2: document.getElementById('kbd2'),
+			kbd3: document.getElementById('kbd3'),
+		};
+
+		let entries = []; // {word, description}
+		let current = null; // {word, description}
+		let answerChars = [];
+		let maxTries = 6;
+		let turn = 0;
+		let over = false;
+		const keyState = new Map(); // letter -> ok/hit/no
+
+		function setStatus(text){
+			el.status.textContent = text;
+		}
+
+		function setMsg(text, kind = ''){
+			el.msg.textContent = text;
+			el.msg.className = 'msg' + (kind ? ' ' + kind : '');
+		}
+
+		function enableGameUI(enabled){
+			el.guess.disabled = !enabled;
+			el.submitBtn.disabled = !enabled;
+			el.giveUpBtn.disabled = !enabled;
+		}
+
+		function clearKeyboard(){
+			keyState.clear();
+			renderKeyboard();
+		}
+
+		function renderKeyboard(){
+			const rows = [
+				['Q','W','E','R','T','Y','U','I','O','P'],
+				['A','S','D','F','G','H','J','K','L'],
+				['ENTER','Z','X','C','V','B','N','M','BKSP'],
+			];
+			const targets = [el.kbd1, el.kbd2, el.kbd3];
+			targets.forEach(t => t.innerHTML = '');
+
+			rows.forEach((r, idx) => {
+				r.forEach(k => {
+					const b = document.createElement('div');
+					b.className = 'k' + ((k === 'ENTER' || k === 'BKSP') ? ' wide' : '');
+					b.textContent = k === 'BKSP' ? '⌫' : (k === 'ENTER' ? 'Enter' : k);
+
+					const state = keyState.get(k);
+					if(state) b.classList.add(state);
+
+					b.addEventListener('click', () => {
+						if(el.guess.disabled) return;
+						if(k === 'ENTER'){
+							submitGuess();
+							return;
+						}
+						if(k === 'BKSP'){
+							el.guess.value = el.guess.value.slice(0, -1);
+							el.guess.focus();
+							return;
+						}
+						// regular letter
+						const currentValue = normalizeWord(el.guess.value);
+						if(toGraphemes(currentValue).length >= answerChars.length) return;
+						el.guess.value = currentValue + k;
+						el.guess.focus();
+					});
+
+					targets[idx].appendChild(b);
+				});
+			});
+		}
+
+		function updateKeyboardFromScore(guessChars, score){
+			// Priority: ok > hit > no
+			const rank = { no: 0, hit: 1, ok: 2 };
+			for(let i=0;i<guessChars.length;i++){
+				const ch = guessChars[i];
+				if(ch === ' ') continue;
+				const next = score[i];
+				const prev = keyState.get(ch);
+				if(!prev || rank[next] > rank[prev]) keyState.set(ch, next);
+			}
+			renderKeyboard();
+		}
+
+		function buildGrid(cols, rows){
+			el.grid.innerHTML = '';
+			el.grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+			for(let r=0;r<rows;r++){
+				const row = document.createElement('div');
+				row.className = 'grid-row';
+				row.style.gridTemplateColumns = `repeat(${cols}, 42px)`;
+				for(let c=0;c<cols;c++){
+					const cell = document.createElement('div');
+					cell.className = 'cell';
+					cell.textContent = '';
+					row.appendChild(cell);
+				}
+				el.grid.appendChild(row);
+			}
+		}
+
+		function writeRow(rowIndex, guessChars, score){
+			const row = el.grid.children[rowIndex];
+			if(!row) return;
+			for(let i=0;i<answerChars.length;i++){
+				const cell = row.children[i];
+				const ch = guessChars[i] ?? '';
+				cell.textContent = ch;
+				cell.classList.remove('ok','hit','no');
+				cell.classList.add(score[i]);
+			}
+		}
+
+		function pickRandomEntry(){
+			if(entries.length === 0) return null;
+			const idx = Math.floor(Math.random() * entries.length);
+			return entries[idx];
+		}
+
+		function startNewGame(){
+			current = pickRandomEntry();
+			if(!current){
+				setMsg('CSVを先に読み込んでください', 'error');
+				return;
+			}
+
+			const word = normalizeWord(current.word);
+			const chars = toGraphemes(word);
+			if(chars.length === 0){
+				setMsg('wordが空の行があります', 'error');
+				return;
+			}
+
+			answerChars = chars;
+			maxTries = 6;
+			turn = 0;
+			over = false;
+			clearKeyboard();
+
+			el.game.style.display = '';
+			el.hint.style.display = '';
+			el.hint.innerHTML = `<b>description:</b> ${escapeHtml(String(current.description ?? ''))}`;
+			el.len.textContent = String(answerChars.length);
+			el.left.textContent = String(maxTries - turn);
+			buildGrid(answerChars.length, maxTries);
+
+			el.guess.value = '';
+			el.guess.maxLength = answerChars.length * 4; // allow multi-byte input; we validate by graphemes
+			el.guess.placeholder = `${answerChars.length}文字で入力してEnter`;
+
+			enableGameUI(true);
+			el.guess.focus();
+			setMsg('');
+		}
+
+		function endGame(success){
+			over = true;
+			enableGameUI(false);
+			const ans = answerChars.join('');
+			if(success){
+				setMsg('正解！', 'success');
+			} else {
+				setMsg(`終了。答え: ${ans}`, 'error');
+			}
+			el.left.textContent = '0';
+		}
+
+		function submitGuess(){
+			if(over) return;
+			const raw = el.guess.value;
+			const guessWord = normalizeWord(raw);
+			const guessChars = toGraphemes(guessWord);
+
+			if(guessChars.length !== answerChars.length){
+				setMsg(`${answerChars.length}文字で入力してください（いま ${guessChars.length} 文字）`, 'error');
+				return;
+			}
+			if(guessChars.some(ch => ch.trim() === '')){
+				setMsg('空白のみの文字は使えません', 'error');
+				return;
+			}
+
+			const score = scoreGuess(answerChars, guessChars);
+			writeRow(turn, guessChars, score);
+			updateKeyboardFromScore(guessChars, score);
+
+			turn++;
+			el.left.textContent = String(Math.max(0, maxTries - turn));
+			el.guess.value = '';
+
+			const isCorrect = score.every(s => s === 'ok');
+			if(isCorrect){
+				endGame(true);
+				return;
+			}
+			if(turn >= maxTries){
+				endGame(false);
+				return;
+			}
+			setMsg('');
+			el.guess.focus();
+		}
+
+		function escapeHtml(s){
+			return String(s)
+				.replaceAll('&', '&amp;')
+				.replaceAll('<', '&lt;')
+				.replaceAll('>', '&gt;')
+				.replaceAll('"', '&quot;')
+				.replaceAll("'", '&#39;');
+		}
+
+			const CSV_URL = './quiz.csv';
+
+			async function loadCsvUrl(url){
+				const res = await fetch(url, { cache: 'no-store' });
+				if(!res.ok){
+					throw new Error(`quiz.csv の取得に失敗しました（HTTP ${res.status}）`);
+				}
+				return await res.text();
+			}
+
+		function normalizeHeader(s){
+			return String(s ?? '').trim().toLowerCase();
+		}
+
+			async function handleLoad(){
+				setStatus('読み込み中...');
+			setMsg('');
+			try{
+					const text = await loadCsvUrl(CSV_URL);
+				const rows = parseCsv(text);
+				if(rows.length < 2) throw new Error('CSVにデータ行がありません');
+
+				const header = rows[0].map(normalizeHeader);
+				const wordIdx = header.indexOf('word');
+				const descIdx = header.indexOf('description');
+				if(wordIdx === -1 || descIdx === -1){
+					throw new Error('ヘッダーは word,description が必要です');
+				}
+
+				const parsed = [];
+				for(let i=1;i<rows.length;i++){
+					const r = rows[i];
+					const w = normalizeWord(r[wordIdx]);
+					const d = String(r[descIdx] ?? '').trim();
+					if(!w) continue;
+					parsed.push({ word: w, description: d });
+				}
+				if(parsed.length === 0) throw new Error('有効なwordがありません');
+
+				entries = parsed;
+				el.newBtn.disabled = false;
+					setStatus(`読み込み完了: ${entries.length}件（quiz.csv）`);
+				startNewGame();
+			}catch(err){
+				entries = [];
+				el.newBtn.disabled = true;
+				el.game.style.display = 'none';
+				el.hint.style.display = 'none';
+				setStatus('読み込み失敗');
+				setMsg(String(err?.message ?? err), 'error');
+			}
+		}
+
+			// Wiring
+			el.loadBtn.addEventListener('click', handleLoad);
+		el.newBtn.addEventListener('click', () => {
+			startNewGame();
+		});
+		el.submitBtn.addEventListener('click', submitGuess);
+		el.giveUpBtn.addEventListener('click', () => {
+			if(over) return;
+			endGame(false);
+		});
+		el.guess.addEventListener('keydown', (e) => {
+			if(e.key === 'Enter'){
+				e.preventDefault();
+				submitGuess();
+			}
+		});
+		document.addEventListener('keydown', (e) => {
+			if(el.guess.disabled) return;
+			if(e.key === 'Backspace') return; // handled by input
+			if(e.key === 'Enter') return;
+			// Keep focus on input so typing works naturally
+			if(document.activeElement !== el.guess) el.guess.focus();
+		});
+
+			renderKeyboard();
+			// GitHub Pages向け: 初回は自動で quiz.csv を読み込む
+			handleLoad();
+	</script>
+</body>
+</html>
