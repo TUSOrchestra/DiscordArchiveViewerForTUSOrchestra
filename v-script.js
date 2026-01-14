@@ -26,6 +26,11 @@ const userSuggestions = document.getElementById('userSuggestions');
 const datePicker = document.getElementById('datePicker');
 const logFileLabel = document.getElementById('logFileLabel');
 
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const sidebarClose = document.getElementById('sidebarClose');
+const menuToggleMobile = document.getElementById('menuToggleMobile');
+
 let users = {};
 let roles = {};
 let emojis = {};
@@ -34,6 +39,23 @@ let currentChannel = null;
 let currentChannelIsPrivate = false;
 let selectedFiles = { server: null, messages: null };
 let driveFiles = {};
+
+/* ===== mobile sidebar toggle ===== */
+function openSidebar(){
+  sidebar.classList.add('active');
+  sidebarOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSidebar(){
+  sidebar.classList.remove('active');
+  sidebarOverlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+menuToggleMobile.addEventListener('click', openSidebar);
+sidebarClose.addEventListener('click', closeSidebar);
+sidebarOverlay.addEventListener('click', closeSidebar);
 
 /* ===== theme toggle ===== */
 function initTheme(){
@@ -615,6 +637,11 @@ function renderThread(ev, cat, ch, threadName, threadMsgs){
   document.querySelectorAll('.thread').forEach(el=>el.classList.remove('selected'));
   ev.currentTarget.classList.add('selected');
 
+  // Close sidebar on mobile after selection
+  if(window.innerWidth <= 768){
+    closeSidebar();
+  }
+
   threadMessages.innerHTML='';
   threadTitle.textContent=`💬 ${threadName}`;
   threadPanel.classList.add('active');
@@ -659,6 +686,11 @@ function renderChannel(ev,cat,ch,data){
   document.querySelectorAll('.channel').forEach(el=>el.classList.remove('selected'));
   document.querySelectorAll('.thread').forEach(el=>el.classList.remove('selected'));
   ev.currentTarget.classList.add('selected');
+
+  // Close sidebar on mobile after selection
+  if(window.innerWidth <= 768){
+    closeSidebar();
+  }
 
   messagesEl.innerHTML='';
   const roomTitle = document.getElementById('roomTitle');
@@ -1322,3 +1354,15 @@ searchIcon.addEventListener('click', (e)=>{
   }
 });
 
+// Search panel close button
+document.getElementById('searchPanelClose').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  searchInput.value = '';
+  updateSearchHighlight();
+  searchPanel.classList.remove('active');
+  document.getElementById('searchBarContainer').classList.remove('active');
+  searchIcon.textContent = '🔍';
+  searchIcon.classList.remove('closable');
+  userSuggestions.style.display = 'none';
+  datePicker.style.display = 'none';
+});
