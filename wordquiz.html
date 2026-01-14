@@ -840,6 +840,7 @@
 			
 			if(navigator.share){
 				try{
+                    console.log('Sharing via Web Share API');
 					await navigator.share({
 						title: 'Word Quiz',
 						text: text,
@@ -853,6 +854,7 @@
 			} else {
 				// Fallback: copy to clipboard
 				try{
+                    console.log('Copying to clipboard');
 					await navigator.clipboard.writeText(text);
 					alert('クリップボードにコピーしました');
 				}catch(err){
@@ -941,6 +943,5 @@
 	</script>
 </body>
 </html>
-
 
 
