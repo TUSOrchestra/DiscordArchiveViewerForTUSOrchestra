@@ -708,7 +708,7 @@
 			if(el.resultModal){
 				el.modalTitle.textContent = success ? '正解！' : '終了';
 				el.modalTitle.className = 'modal-title ' + (success ? 'success' : 'error');
-				el.modalAnswer.textContent = ans;
+				el.modalAnswer.textContent = ans + (current?.abbreviation ? ` (${current.abbreviation})` : '');
 				el.modalDesc.textContent = current?.description ?? '';
 				el.resultModal.style.display = '';
 			}
@@ -849,11 +849,11 @@
 			const emoji = lastResult.success ? '🎉' : '😢';
 			const status = lastResult.success ? `${lastResult.turns}/${lastResult.maxTries}回で正解！` : `不正解...`
 			const answer = `答え: ${lastResult.answer}`;
-			const shareText = `${emoji} Word Quiz ${emoji}\n${status} ${answer}\n説明: ${lastResult.description}`;
+			const shareText = `${emoji} Word Quiz ${emoji}\n${status}\n${answer}\n説明: ${lastResult.description}`;
 			
 			try {
 				await navigator.clipboard.writeText(shareText);
-				el.modalShareBtn.textContent = '✅ コピーしました';
+				el.modalShareBtn.textContent = 'クリップボードにコピーしました！';
 				setTimeout(() => {
 					el.modalShareBtn.textContent = '📝 共有';
 				}, 2000);
@@ -861,9 +861,11 @@
 				console.error('Clipboard copy failed', e);
 			}
 			
-			// Open Discord channel (replace with your channel URL)
+			// Open Discord channel
 			const discordChannelUrl = 'https://discord.com/channels/1181531577373696090/1383762455783542994';
-			window.open(discordChannelUrl, '_blank');
+			setTimeout(() => {
+                window.open(discordChannelUrl, '_blank');
+            },2000);
 		});
 		el.guess.addEventListener('keydown', (e) => {
 			if(candidateState){
@@ -946,7 +948,6 @@
 	</script>
 </body>
 </html>
-
 
 
 
