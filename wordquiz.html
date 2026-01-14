@@ -148,10 +148,6 @@
 
 		<div class="panel">
 			<div class="row">
-				<div style="min-width:260px">
-					<label>CSV（同階層の <code>quizzes.csv</code> を読み込み）</label><br />
-					<span class="status"><code>quizzes.csv</code> を自動で読み込みます</span>
-				</div>
 				<button id="loadBtn">CSV再読み込み</button>
 				<button id="newBtn" disabled>新しい問題</button>
 				<button id="ruleBtn">ルール設定</button>
@@ -159,11 +155,11 @@
 			</div>
 			<div class="row" id="rulePanel" style="display:none">
 				<label>難易度フィルタ:</label>
-				<label><input type="checkbox" id="diff1" checked /> 1</label>
-				<label><input type="checkbox" id="diff2" checked /> 2</label>
-				<label><input type="checkbox" id="diff3" checked /> 3</label>
-				<label><input type="checkbox" id="diff4" checked /> 4</label>
-				<label><input type="checkbox" id="diff5" checked /> 5</label>
+				<label><input type="checkbox" id="diff1" checked /> 1 <span id="count1" class="status"></span></label>
+				<label><input type="checkbox" id="diff2" checked /> 2 <span id="count2" class="status"></span></label>
+				<label><input type="checkbox" id="diff3" checked /> 3 <span id="count3" class="status"></span></label>
+				<label><input type="checkbox" id="diff4" checked /> 4 <span id="count4" class="status"></span></label>
+				<label><input type="checkbox" id="diff5" checked /> 5 <span id="count5" class="status"></span></label>
 				<span id="filteredCount" class="status"></span>
 			</div>
 			<div class="row">
@@ -409,6 +405,11 @@
 			diff3: document.getElementById('diff3'),
 			diff4: document.getElementById('diff4'),
 			diff5: document.getElementById('diff5'),
+			count1: document.getElementById('count1'),
+			count2: document.getElementById('count2'),
+			count3: document.getElementById('count3'),
+			count4: document.getElementById('count4'),
+			count5: document.getElementById('count5'),
 			status: document.getElementById('status'),
 			hint: document.getElementById('hint'),
 			game: document.getElementById('game'),
@@ -557,8 +558,20 @@
 			} else {
 				entries = allEntries.filter(e => selected.includes(e.difficulty));
 			}
+			// Per-level counts
+			for(let lv = 1; lv <= 5; lv++){
+				const countEl = el['count' + lv];
+				if(countEl){
+					const c = allEntries.filter(e => e.difficulty === lv).length;
+					countEl.textContent = `(${c})`;
+				}
+			}
 			if(el.filteredCount){
 				el.filteredCount.textContent = `対象: ${entries.length}件 / 全${allEntries.length}件`;
+			}
+			// Disable newBtn if no entries available
+			if(el.newBtn){
+				el.newBtn.disabled = (allEntries.length === 0 || entries.length === 0);
 			}
 		}
 
