@@ -138,6 +138,8 @@
 		.k.wide{min-width:78px}
 		.footer{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.6}
 		.footer code{background:#0c0f15;border:1px solid var(--line);padding:2px 6px;border-radius:6px;color:var(--text)}
+		#rulePanel label{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--text);cursor:pointer}
+		#rulePanel input[type="checkbox"]{accent-color:var(--focus);width:16px;height:16px}
 	</style>
 </head>
 <body>
@@ -148,11 +150,21 @@
 			<div class="row">
 				<div style="min-width:260px">
 					<label>CSV（同階層の <code>quizzes.csv</code> を読み込み）</label><br />
-					<span class="status"><code>quizzees.csv</code> を自動で読み込みます</span>
+					<span class="status"><code>quizzes.csv</code> を自動で読み込みます</span>
 				</div>
-				<button id="loadBtn">quizzes.csv を読み込む</button>
+				<button id="loadBtn">CSV再読み込み</button>
 				<button id="newBtn" disabled>新しい問題</button>
+				<button id="ruleBtn">ルール設定</button>
 				<span id="status" class="status">quizzes.csv 未読込</span>
+			</div>
+			<div class="row" id="rulePanel" style="display:none">
+				<label>難易度フィルタ:</label>
+				<label><input type="checkbox" id="diff1" checked /> 1</label>
+				<label><input type="checkbox" id="diff2" checked /> 2</label>
+				<label><input type="checkbox" id="diff3" checked /> 3</label>
+				<label><input type="checkbox" id="diff4" checked /> 4</label>
+				<label><input type="checkbox" id="diff5" checked /> 5</label>
+				<span id="filteredCount" class="status"></span>
 			</div>
 			<div class="row">
 				<div id="hint" class="hint" style="display:none"></div>
@@ -389,6 +401,14 @@
 			const el = {
 			loadBtn: document.getElementById('loadBtn'),
 			newBtn: document.getElementById('newBtn'),
+			ruleBtn: document.getElementById('ruleBtn'),
+			rulePanel: document.getElementById('rulePanel'),
+			filteredCount: document.getElementById('filteredCount'),
+			diff1: document.getElementById('diff1'),
+			diff2: document.getElementById('diff2'),
+			diff3: document.getElementById('diff3'),
+			diff4: document.getElementById('diff4'),
+			diff5: document.getElementById('diff5'),
 			status: document.getElementById('status'),
 			hint: document.getElementById('hint'),
 			game: document.getElementById('game'),
@@ -406,8 +426,9 @@
             kbd4: document.getElementById('kbd4'),
 		};
 
-		let entries = []; // {word, description}
-		let current = null; // {word, description}
+		let allEntries = []; // {word, description, abbreviation, difficulty}
+		let entries = []; // filtered by difficulty
+		let current = null; // {word, description, abbreviation, difficulty}
 		let answerChars = [];
 		let maxTries = 6;
 		let turn = 0;
@@ -519,7 +540,30 @@
 			}
 		}
 
+		function getSelectedDifficulties(){
+			const selected = [];
+			if(el.diff1?.checked) selected.push(1);
+			if(el.diff2?.checked) selected.push(2);
+			if(el.diff3?.checked) selected.push(3);
+			if(el.diff4?.checked) selected.push(4);
+			if(el.diff5?.checked) selected.push(5);
+			return selected;
+		}
+
+		function updateFilteredEntries(){
+			const selected = getSelectedDifficulties();
+			if(selected.length === 0){
+				entries = [...allEntries];
+			} else {
+				entries = allEntries.filter(e => selected.includes(e.difficulty));
+			}
+			if(el.filteredCount){
+				el.filteredCount.textContent = `対象: ${entries.length}件 / 全${allEntries.length}件`;
+			}
+		}
+
 		function pickRandomEntry(){
+			updateFilteredEntries();
 			if(entries.length === 0) return null;
 			const idx = Math.floor(Math.random() * entries.length);
 			return entries[idx];
@@ -643,6 +687,8 @@
 				const header = rows[0].map(normalizeHeader);
 				const wordIdx = header.indexOf('word');
 				const descIdx = header.indexOf('description');
+				const abbrIdx = header.indexOf('abbreviation');
+				const diffIdx = header.indexOf('difficultylevel');
 				if(wordIdx === -1 || descIdx === -1){
 					throw new Error('ヘッダーは word,description が必要です');
 				}
@@ -652,14 +698,17 @@
 					const r = rows[i];
 					const w = normalizeWord(r[wordIdx]);
 					const d = String(r[descIdx] ?? '').trim();
+					const abbr = abbrIdx !== -1 ? String(r[abbrIdx] ?? '').trim() : '';
+					const diff = diffIdx !== -1 ? parseInt(r[diffIdx], 10) || 1 : 1;
 					if(!w) continue;
-					parsed.push({ word: w, description: d });
+					parsed.push({ word: w, description: d, abbreviation: abbr, difficulty: diff });
 				}
 				if(parsed.length === 0) throw new Error('有効なwordがありません');
 
-				entries = parsed;
+				allEntries = parsed;
+				updateFilteredEntries();
 				el.newBtn.disabled = false;
-					setStatus(`読み込み完了: ${entries.length}件（quizzes.csv）`);
+					setStatus(`読み込み完了: ${allEntries.length}件（quizzes.csv）`);
 				startNewGame();
 			}catch(err){
 				entries = [];
@@ -672,6 +721,20 @@
 		}
 		el.newBtn.addEventListener('click', () => {
 			startNewGame();
+		});
+		el.ruleBtn.addEventListener('click', () => {
+			const panel = el.rulePanel;
+			if(panel.style.display === 'none'){
+				panel.style.display = '';
+				updateFilteredEntries();
+			} else {
+				panel.style.display = 'none';
+			}
+		});
+		[el.diff1, el.diff2, el.diff3, el.diff4, el.diff5].forEach(cb => {
+			if(cb) cb.addEventListener('change', () => {
+				updateFilteredEntries();
+			});
 		});
 		el.submitBtn.addEventListener('click', submitGuess);
 		el.giveUpBtn.addEventListener('click', () => {
