@@ -118,12 +118,12 @@
 		<div class="panel">
 			<div class="row">
 				<div style="min-width:260px">
-					<label>CSV（同階層の <code>quiz.csv</code> を読み込み）</label><br />
-					<span class="status"><code>quiz.csv</code> を自動で読み込みます</span>
+					<label>CSV（同階層の <code>quizzes.csv</code> を読み込み）</label><br />
+					<span class="status"><code>quizzees.csv</code> を自動で読み込みます</span>
 				</div>
-				<button id="loadBtn">quiz.csv を読み込む</button>
+				<button id="loadBtn">quizzes.csv を読み込む</button>
 				<button id="newBtn" disabled>新しい問題</button>
-				<span id="status" class="status">quiz.csv 未読込</span>
+				<span id="status" class="status">quizzes.csv 未読込</span>
 			</div>
 			<div class="row">
 				<div id="hint" class="hint" style="display:none"></div>
@@ -501,12 +501,12 @@
 				.replaceAll("'", '&#39;');
 		}
 
-			const CSV_URL = './quiz.csv';
+			const CSV_URL = './quizzes.csv';
 
 			async function loadCsvUrl(url){
 				const res = await fetch(url, { cache: 'no-store' });
 				if(!res.ok){
-					throw new Error(`quiz.csv の取得に失敗しました（HTTP ${res.status}）`);
+					throw new Error(`quizzes.csv の取得に失敗しました（HTTP ${res.status}）`);
 				}
 				return await res.text();
 			}
@@ -542,7 +542,7 @@
 
 				entries = parsed;
 				el.newBtn.disabled = false;
-					setStatus(`読み込み完了: ${entries.length}件（quiz.csv）`);
+					setStatus(`読み込み完了: ${entries.length}件（quizzes.csv）`);
 				startNewGame();
 			}catch(err){
 				entries = [];
@@ -581,4 +581,5 @@
 	</script>
 </body>
 </html>
+
 
