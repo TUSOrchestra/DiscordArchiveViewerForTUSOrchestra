@@ -847,8 +847,9 @@
 		el.modalShareBtn.addEventListener('click', async () => {
 			if(!lastResult) return;
 			const emoji = lastResult.success ? '🎉' : '😢';
-			const status = lastResult.success ? `${lastResult.turns}/${lastResult.maxTries}回で正解！` : `不正解...` + `答え: ${lastResult.answer}`;
-			const shareText = `${emoji} Word Quiz ${emoji}\n${status}\n説明: ${lastResult.description}`;
+			const status = lastResult.success ? `${lastResult.turns}/${lastResult.maxTries}回で正解！` : `不正解...`
+			const answer = `答え: ${lastResult.answer}`;
+			const shareText = `${emoji} Word Quiz ${emoji}\n${status} ${answer}\n説明: ${lastResult.description}`;
 			
 			try {
 				await navigator.clipboard.writeText(shareText);
@@ -945,6 +946,7 @@
 	</script>
 </body>
 </html>
+
 
 
 
