@@ -553,9 +553,6 @@
 				setMsg(String(err?.message ?? err), 'error');
 			}
 		}
-
-			// Wiring
-			el.loadBtn.addEventListener('click', handleLoad);
 		el.newBtn.addEventListener('click', () => {
 			startNewGame();
 		});
@@ -579,8 +576,9 @@
 		});
 
 			renderKeyboard();
-			// GitHub Pages向け: 初回は自動で quiz.csv を読み込む
+			// GitHub Pages向け: 初回は自動で quizzes.csv を読み込む
 			handleLoad();
 	</script>
 </body>
 </html>
+
