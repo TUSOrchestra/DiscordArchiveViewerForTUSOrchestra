@@ -10,16 +10,12 @@
 </head>
 
 <body>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="app">
-  <button id="menuToggle" class="menu-toggle">☰</button>
-  <div id="sidebarOverlay" class="sidebar-overlay"></div>
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar">
     <div class="header">
       <span>Viewer</span>
-      <div class="header-buttons">
-        <button id="themeToggle" class="theme-toggle"></button>
-        <button id="sidebarClose" class="sidebar-close">✕</button>
-      </div>
+      <button id="themeToggle" class="theme-toggle"></button>
     </div>
 
     <div class="controls" id="localControls">
@@ -46,7 +42,7 @@
 
   <main class="main">
     <div class="topbar">
-      <button id="menuToggleMobile" class="menu-toggle-mobile">☰</button>
+      <button id="sidebarToggle" class="sidebar-toggle">☰</button>
       <div id="roomTitle">未選択</div>
       <div class="topbar-search" id="searchBarContainer" style="display:none;">
         <div class="search-input-wrapper">
