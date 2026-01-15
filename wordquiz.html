@@ -48,16 +48,17 @@
 		.pill{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#121520}
 		.pill strong{color:var(--text);font-weight:700}
 
-		.grid{margin-top:12px;display:grid;gap:8px;justify-content:flex-start}
-		.grid-row{display:grid;gap:8px}
+		.grid{margin-top:12px;display:grid;gap:var(--grid-gap, 8px);justify-content:flex-start;max-width:100%}
+		.grid-row{display:grid;gap:var(--grid-gap, 8px);max-width:100%}
 		.cell{
-			width:42px;height:42px;
+			width:var(--cell-size, 42px);height:var(--cell-size, 42px);
 			border-radius:10px;
 			border:1px solid var(--line);
 			background:var(--cell);
 			color:var(--cellText);
 			display:flex;align-items:center;justify-content:center;
 			font-weight:800;
+			font-size:var(--cell-font, 14px);
 			letter-spacing:.02em;
 			text-transform:none;
 			user-select:none;
@@ -65,21 +66,31 @@
 		.cell.ok{background:color-mix(in srgb, var(--ok) 35%, var(--cell));border-color:color-mix(in srgb, var(--ok) 70%, var(--line))}
 		.cell.hit{background:color-mix(in srgb, var(--hit) 35%, var(--cell));border-color:color-mix(in srgb, var(--hit) 70%, var(--line))}
 		.cell.no{background:color-mix(in srgb, var(--no) 35%, var(--cell));border-color:color-mix(in srgb, var(--no) 70%, var(--line))}
+		.cell.input-cell{border-color:var(--muted);cursor:text}
+		.cell.input-cell.focus{border-color:var(--focus);box-shadow:0 0 0 2px color-mix(in srgb, var(--focus) 30%, transparent)}
+		.cell.input-cell.cursor::after{
+			content:'';
+			position:absolute;
+			width:2px;
+			height:60%;
+			background:var(--focus);
+			animation:blink 1s step-end infinite;
+		}
+		.cell{position:relative}
+		@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+		.input-row{margin-top:12px}
+		.input-row .cell{cursor:text}
 
 		.guessbar{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 		.guessbar input[type="text"]{
-			width:260px;
-			max-width:100%;
-			padding:10px 12px;
-			border-radius:10px;
-			border:1px solid var(--line);
-			background:#0c0f15;
-			color:var(--text);
-			outline:none;
-			font-size:14px;
-			text-transform:lowercase;
+			position:absolute;
+			opacity:0;
+			pointer-events:none;
+			width:1px;
+			height:1px;
 		}
-		.guessbar input[type="text"]:focus{border-color:var(--focus);box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent)}
+		.guessbar input[type="text"]:focus{outline:none}
 		.candidates{
 			margin-top:10px;
 			display:block;
@@ -229,8 +240,10 @@
 
 				<div id="grid" class="grid" aria-label="guesses"></div>
 
+				<div id="inputRow" class="grid-row input-row" aria-label="input"></div>
+
 				<div class="guessbar">
-					<input id="guess" type="text" inputmode="latin" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ここに入力してEnter" disabled />
+					<input id="guess" type="text" inputmode="latin" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="" disabled />
 					<button id="submitBtn" disabled>判定</button>
 					<button id="giveUpBtn" disabled>ギブアップ</button>
 				</div>
@@ -484,6 +497,7 @@
 			submitBtn: document.getElementById('submitBtn'),
 			giveUpBtn: document.getElementById('giveUpBtn'),
 			msg: document.getElementById('msg'),
+			inputRow: document.getElementById('inputRow'),
 			candidates: document.getElementById('candidates'),
 			kbd1: document.getElementById('kbd1'),
 			kbd2: document.getElementById('kbd2'),
@@ -592,12 +606,31 @@
 
 		function buildGrid(cols, rows){
 			el.grid.innerHTML = '';
-			el.grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+			
+			// Calculate cell size to fit within panel width (shrink only, not expand)
+			const maxCellSize = 42;
+			const maxGap = 8;
+			const containerWidth = el.grid.parentElement?.clientWidth ?? 600;
+			const neededWidth = cols * maxCellSize + (cols - 1) * maxGap;
+			
+			let cellSize = maxCellSize;
+			let cellGap = maxGap;
+			if(neededWidth > containerWidth){
+				// Shrink proportionally
+				const ratio = containerWidth / neededWidth;
+				cellSize = Math.floor(maxCellSize * ratio);
+				cellGap = Math.max(2, Math.floor(maxGap * ratio));
+			}
+			
+			el.grid.style.setProperty('--cell-size', `${cellSize}px`);
+			el.grid.style.setProperty('--grid-gap', `${cellGap}px`);
+			el.grid.style.setProperty('--cell-font', `${Math.max(10, Math.floor(cellSize * 0.35))}px`);
+			el.grid.style.gridTemplateRows = `repeat(${rows}, auto)`;
 
 			for(let r=0;r<rows;r++){
 				const row = document.createElement('div');
 				row.className = 'grid-row';
-				row.style.gridTemplateColumns = `repeat(${cols}, 42px)`;
+				row.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size, 42px))`;
 				for(let c=0;c<cols;c++){
 					const cell = document.createElement('div');
 					cell.className = 'cell';
@@ -605,6 +638,50 @@
 					row.appendChild(cell);
 				}
 				el.grid.appendChild(row);
+			}
+
+			// Build input row
+			buildInputRow(cols, cellSize, cellGap);
+		}
+
+		function buildInputRow(cols, cellSize, cellGap){
+			el.inputRow.innerHTML = '';
+			el.inputRow.style.setProperty('--cell-size', `${cellSize}px`);
+			el.inputRow.style.setProperty('--grid-gap', `${cellGap}px`);
+			el.inputRow.style.setProperty('--cell-font', `${Math.max(10, Math.floor(cellSize * 0.35))}px`);
+			el.inputRow.style.display = 'grid';
+			el.inputRow.style.gap = `${cellGap}px`;
+			el.inputRow.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+
+			for(let c=0;c<cols;c++){
+				const cell = document.createElement('div');
+				cell.className = 'cell input-cell';
+				cell.textContent = '';
+				cell.addEventListener('click', () => {
+					if(!el.guess.disabled){
+						el.guess.focus();
+					}
+				});
+				el.inputRow.appendChild(cell);
+			}
+			updateInputCells();
+		}
+
+		function updateInputCells(){
+			const chars = toGraphemes(el.guess.value.toLowerCase());
+			const cells = el.inputRow.children;
+			const isFocused = document.activeElement === el.guess && !el.guess.disabled;
+
+			for(let i=0;i<cells.length;i++){
+				const cell = cells[i];
+				cell.textContent = chars[i] ?? '';
+				cell.classList.remove('cursor', 'focus');
+				if(isFocused){
+					cell.classList.add('focus');
+					if(i === chars.length && i < cells.length){
+						cell.classList.add('cursor');
+					}
+				}
 			}
 		}
 
@@ -939,22 +1016,19 @@
 			if(el.guess.value !== limited){
 				el.guess.value = limited;
 			}
+			updateInputCells();
 		});
-		document.addEventListener('keydown', (e) => {
-			if(el.guess.disabled) return;
-			if(e.key === 'Backspace') return; // handled by input
-			if(e.key === 'Enter') return;
-			// Keep focus on input so typing works naturally
-			if(document.activeElement !== el.guess) el.guess.focus();
-		});
-
+		el.guess.addEventListener('focus', updateInputCells);
 		el.guess.addEventListener('blur', () => {
 			hideCandidates();
+			updateInputCells();
 		});
+		document.addEventListener('keydown', (e) => {
 
 			renderKeyboard();
 			// GitHub Pages向け: 初回は自動で quizzes.csv を読み込む
 			handleLoad();
+        });
 	</script>
 </body>
 </html>
