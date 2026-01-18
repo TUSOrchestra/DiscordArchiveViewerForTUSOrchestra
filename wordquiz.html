@@ -244,7 +244,6 @@
 
 				<div class="guessbar">
 					<input id="guess" type="text" inputmode="latin" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="" disabled />
-					<button id="submitBtn" disabled>判定</button>
 					<button id="giveUpBtn" disabled>ギブアップ</button>
 				</div>
 				<div id="candidates" class="candidates" style="display:none" aria-label="candidates"></div>
@@ -494,7 +493,6 @@
 			left: document.getElementById('left'),
 			grid: document.getElementById('grid'),
 			guess: document.getElementById('guess'),
-			submitBtn: document.getElementById('submitBtn'),
 			giveUpBtn: document.getElementById('giveUpBtn'),
 			msg: document.getElementById('msg'),
 			inputRow: document.getElementById('inputRow'),
@@ -540,7 +538,6 @@
 
 		function enableGameUI(enabled){
 			el.guess.disabled = !enabled;
-			el.submitBtn.disabled = !enabled;
 			el.giveUpBtn.disabled = !enabled;
 		}
 
@@ -918,7 +915,6 @@
 				updateFilteredEntries();
 			});
 		});
-		el.submitBtn.addEventListener('click', submitGuess);
 		el.giveUpBtn.addEventListener('click', () => {
 			if(over) return;
 			endGame(false);
