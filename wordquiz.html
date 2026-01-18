@@ -1023,12 +1023,16 @@
 			hideCandidates();
 			updateInputCells();
 		});
-		document.addEventListener('keydown', (e) => {
 
-			renderKeyboard();
-			// GitHub Pages向け: 初回は自動で quizzes.csv を読み込む
+		// 読み込みボタンのイベントリスナー
+		el.loadBtn.addEventListener('click', () => {
 			handleLoad();
-        });
+		});
+
+		// 初期化: キーボード描画と自動読み込み
+		renderKeyboard();
+		// GitHub Pages向け: 初回は自動で quizzes.csv を読み込む
+		handleLoad();
 	</script>
 </body>
 </html>
