@@ -58,15 +58,21 @@ sidebarCloseBtn.addEventListener('click', closeSidebar);
 sidebarOverlay.addEventListener('click', closeSidebar);
 
 /* ===== theme toggle ===== */
-function initTheme(){
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.body.setAttribute('data-theme', savedTheme);
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    document.body.setAttribute('data-theme', savedTheme);
+  } else {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.body.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+  }
 }
 
-themeToggle.addEventListener('click', ()=>{
+themeToggle.addEventListener('click', () => {
   const currentTheme = document.body.getAttribute('data-theme');
   const newTheme = currentTheme === 'light' ? 'dark' : 'light';
   document.body.setAttribute('data-theme', newTheme);
+  // ユーザー操作時のみlocalStorageに保存
   localStorage.setItem('theme', newTheme);
 });
 
