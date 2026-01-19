@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<script>let version = "1.7";</script>
+	<script>let version = "1.8";</script>
 	<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 	<style>
 		:root{
@@ -180,7 +180,7 @@
 			padding:8px 10px;
 			border-radius:10px;
 			border:1px solid var(--line);
-			background:#0c0f15;
+			background:var(--cell);
 			color:var(--text);
 			font-size:12px;
 			text-transform:none;
@@ -188,9 +188,9 @@
 			user-select:none;
 			cursor:pointer;
 		}
-		.k.ok{background:color-mix(in srgb, var(--ok) 25%, #0c0f15)}
-		.k.hit{background:color-mix(in srgb, var(--hit) 25%, #0c0f15)}
-		.k.no{background:color-mix(in srgb, var(--no) 25%, #0c0f15)}
+		.k.ok{background:color-mix(in srgb, var(--ok) 25%, var(--cell))}
+		.k.hit{background:color-mix(in srgb, var(--hit) 25%, var(--cell))}
+		.k.no{background:color-mix(in srgb, var(--no) 25%, var(--cell))}
 		.k.wide{min-width:78px}
 		.footer{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.6}
 		.footer code{background:#0c0f15;border:1px solid var(--line);padding:2px 6px;border-radius:6px;color:var(--text)}
