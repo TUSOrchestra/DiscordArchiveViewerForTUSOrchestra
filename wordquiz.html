@@ -67,18 +67,9 @@
 		.cell.ok{background:color-mix(in srgb, var(--ok) 35%, var(--cell));border-color:color-mix(in srgb, var(--ok) 70%, var(--line))}
 		.cell.hit{background:color-mix(in srgb, var(--hit) 35%, var(--cell));border-color:color-mix(in srgb, var(--hit) 70%, var(--line))}
 		.cell.no{background:color-mix(in srgb, var(--no) 35%, var(--cell));border-color:color-mix(in srgb, var(--no) 70%, var(--line))}
-		.cell.input-cell{border-color:var(--muted);cursor:text}
-		.cell.input-cell.focus{border-color:var(--focus);box-shadow:0 0 0 2px color-mix(in srgb, var(--focus) 30%, transparent)}
-		.cell.input-cell.cursor::after{
-			content:'';
-			position:absolute;
-			width:2px;
-			height:60%;
-			background:var(--focus);
-			animation:blink 1s step-end infinite;
-		}
+		.cell.input-cell{border-color:var(--focus);border-width:2px}
+		.cell.input-cell.current{border-color:#f59e0b;box-shadow:0 0 0 2px color-mix(in srgb, #f59e0b 30%, transparent)}
 		.cell{position:relative}
-		@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
 
 		.guessbar{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 		.candidates{
@@ -215,17 +206,13 @@
 				<label><input type="checkbox" id="diff5" checked /> 5 <span id="count5" class="status"></span></label>
 				<span id="filteredCount" class="status"></span>
 			</div>
-			<div class="row">
-				<div id="hint" class="hint" style="display:none"></div>
-			</div>
 
 			<div class="game" id="game" style="display:none">
 				<div class="meta">
 					<div class="left">
 						<div class="pill">文字数: <strong id="len">-</strong></div>
-						<div class="pill">残り: <strong id="left">-</strong></div>
+						<div class="pill" id="left"></div>
 					</div>
-					<div class="pill">ヒント: <span style="color:var(--muted)">description を表示中</span></div>
 				</div>
 
 				<div id="grid" class="grid" aria-label="guesses"></div>
@@ -468,7 +455,6 @@
 			count4: document.getElementById('count4'),
 			count5: document.getElementById('count5'),
 			status: document.getElementById('status'),
-			hint: document.getElementById('hint'),
 			game: document.getElementById('game'),
 			len: document.getElementById('len'),
 			left: document.getElementById('left'),
@@ -631,11 +617,12 @@
 				const cell = cells[i];
 				// 入力中の行のみ入力文字を表示
 				cell.textContent = chars[i] ?? '';
-				cell.classList.remove('cursor', 'focus', 'input-cell');
+				cell.classList.remove('input-cell', 'current');
 				if(inputEnabled){
-					cell.classList.add('input-cell', 'focus');
+					cell.classList.add('input-cell');
+					// 次に入力されるセルをハイライト
 					if(i === chars.length && i < cells.length){
-						cell.classList.add('cursor');
+						cell.classList.add('current');
 					}
 				}
 			}
@@ -735,10 +722,8 @@
 			clearKeyboard();
 
 			el.game.style.display = '';
-			el.hint.style.display = '';
-			el.hint.innerHTML = `<b>description:</b> ${escapeHtml(String(current.description ?? ''))}`;
 			el.len.textContent = String(answerChars.length);
-			el.left.textContent = String(maxTries - turn);
+			updateRemainingDisplay();
 			buildGrid(answerChars.length, maxTries);
 
 			currentInput = '';
@@ -751,7 +736,7 @@
 			over = true;
 			enableGameUI(false);
 			const ans = answerChars.join('');
-			el.left.textContent = '0';
+			updateRemainingDisplay();
 
 			// Store result for sharing
 			lastResult = {
@@ -791,7 +776,7 @@
 			updateKeyboardFromScore(guessChars, score);
 
 			turn++;
-			el.left.textContent = String(Math.max(0, maxTries - turn));
+			updateRemainingDisplay();
 			currentInput = '';
 			updateInputCells();
 
@@ -814,6 +799,11 @@
 				.replaceAll('>', '&gt;')
 				.replaceAll('"', '&quot;')
 				.replaceAll("'", '&#39;');
+		}
+
+		function updateRemainingDisplay(){
+			const remaining = Math.max(0, maxTries - turn);
+			el.left.textContent = '♪'.repeat(remaining);
 		}
 
 			const CSV_URL = './quizzes.csv';
