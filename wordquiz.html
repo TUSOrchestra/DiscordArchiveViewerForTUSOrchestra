@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<script>let version = "1.1";</script>
+	<script>let version = "1.2";</script>
 	<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 	<style>
 		:root{
@@ -79,9 +79,6 @@
 		}
 		.cell{position:relative}
 		@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
-
-		.input-row{margin-top:12px}
-		.input-row .cell{cursor:text}
 
 		.guessbar{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 		.candidates{
@@ -232,8 +229,6 @@
 				</div>
 
 				<div id="grid" class="grid" aria-label="guesses"></div>
-
-				<div id="inputRow" class="grid-row input-row" aria-label="input"></div>
 
 				<div class="guessbar">
 					<button id="giveUpBtn" disabled>ギブアップ</button>
@@ -480,7 +475,6 @@
 			grid: document.getElementById('grid'),
 			giveUpBtn: document.getElementById('giveUpBtn'),
 			msg: document.getElementById('msg'),
-			inputRow: document.getElementById('inputRow'),
 			candidates: document.getElementById('candidates'),
 			kbd1: document.getElementById('kbd1'),
 			kbd2: document.getElementById('kbd2'),
@@ -621,38 +615,25 @@
 				el.grid.appendChild(row);
 			}
 
-			// Build input row
-			buildInputRow(cols, cellSize, cellGap);
-		}
-
-		function buildInputRow(cols, cellSize, cellGap){
-			el.inputRow.innerHTML = '';
-			el.inputRow.style.setProperty('--cell-size', `${cellSize}px`);
-			el.inputRow.style.setProperty('--grid-gap', `${cellGap}px`);
-			el.inputRow.style.setProperty('--cell-font', `${Math.max(10, Math.floor(cellSize * 0.35))}px`);
-			el.inputRow.style.display = 'grid';
-			el.inputRow.style.gap = `${cellGap}px`;
-			el.inputRow.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
-
-			for(let c=0;c<cols;c++){
-				const cell = document.createElement('div');
-				cell.className = 'cell input-cell';
-				cell.textContent = '';
-				el.inputRow.appendChild(cell);
-			}
+			// 現在のターン行の入力を更新
 			updateInputCells();
 		}
 
 		function updateInputCells(){
+			// 現在のターン行を取得
+			const row = el.grid.children[turn];
+			if(!row) return;
+
 			const chars = toGraphemes(currentInput.toLowerCase());
-			const cells = el.inputRow.children;
+			const cells = row.children;
 
 			for(let i=0;i<cells.length;i++){
 				const cell = cells[i];
+				// 入力中の行のみ入力文字を表示
 				cell.textContent = chars[i] ?? '';
-				cell.classList.remove('cursor', 'focus');
+				cell.classList.remove('cursor', 'focus', 'input-cell');
 				if(inputEnabled){
-					cell.classList.add('focus');
+					cell.classList.add('input-cell', 'focus');
 					if(i === chars.length && i < cells.length){
 						cell.classList.add('cursor');
 					}
