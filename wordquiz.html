@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<script>let version = "1.5";</script>
+	<script>let version = "1.6";</script>
 	<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 	<style>
 		:root{
@@ -116,6 +116,34 @@
 		.msg{margin-top:10px;font-size:13px;color:var(--muted)}
 		.msg.error{color:#fca5a5}
 		.msg.success{color:#86efac}
+
+		.toast-container{
+			position:fixed;
+			top:80px;
+			left:50%;
+			transform:translateX(-50%);
+			z-index:1000;
+			display:flex;
+			flex-direction:column;
+			align-items:center;
+			gap:8px;
+			pointer-events:none;
+		}
+		.toast{
+			background-color:#1a1a1b;
+			color:#fff;
+			padding:12px 20px;
+			border-radius:4px;
+			font-weight:bold;
+			font-size:14px;
+			animation:toastFadeInOut 2s ease-in-out forwards;
+		}
+		@keyframes toastFadeInOut{
+			0%{opacity:0;transform:translateY(10px)}
+			10%{opacity:1;transform:translateY(0)}
+			90%{opacity:1}
+			100%{opacity:0}
+		}
 
 		.kbd{
 			margin-top:10px;
@@ -235,6 +263,7 @@
 				</div>
 				<div id="candidates" class="candidates" style="display:none" aria-label="candidates"></div>
 				<div id="msg" class="msg"></div>
+				<div id="toastContainer" class="toast-container"></div>
 
 				<div class="kbd" aria-label="keyboard">
 					<div class="kbd-row" id="kbd1"></div>
@@ -512,8 +541,24 @@
 		}
 
 		function setMsg(text, kind = ''){
-			el.msg.textContent = text;
-			el.msg.className = 'msg' + (kind ? ' ' + kind : '');
+			if(kind === 'error' && text){
+				// トーストで表示
+				showToast(text);
+			} else {
+				el.msg.textContent = text;
+				el.msg.className = 'msg' + (kind ? ' ' + kind : '');
+			}
+		}
+
+		function showToast(text){
+			const container = document.getElementById('toastContainer');
+			if(!container) return;
+			const toast = document.createElement('div');
+			toast.className = 'toast';
+			toast.textContent = text;
+			container.appendChild(toast);
+			// アニメーション終了後に削除
+			setTimeout(() => toast.remove(), 2000);
 		}
 
 		function enableGameUI(enabled){
