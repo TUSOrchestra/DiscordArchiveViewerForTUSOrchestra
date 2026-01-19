@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<script>let version = "1.3";</script>
+	<script>let version = "1.4";</script>
 	<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 	<style>
 		:root{
@@ -70,6 +70,19 @@
 		.cell.input-cell{border-color:var(--focus);border-width:2px}
 		.cell.input-cell.current{border-color:#f59e0b;box-shadow:0 0 0 2px color-mix(in srgb, #f59e0b 30%, transparent)}
 		.cell{position:relative}
+
+		.grid-row.shake{
+			animation:shake 0.5s ease-in-out;
+		}
+		@keyframes shake{
+			0%,100%{transform:translateX(0)}
+			10%,30%,50%,70%,90%{transform:translateX(-5px)}
+			20%,40%,60%,80%{transform:translateX(5px)}
+		}
+
+		.note{display:inline-block;font-size:14px}
+		.note.filled{color:var(--text)}
+		.note.empty{color:transparent;-webkit-text-stroke:1px var(--muted);text-stroke:1px var(--muted)}
 
 		.guessbar{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 		.candidates{
@@ -763,11 +776,13 @@
 			const guessChars = toGraphemes(guessWord);
 
 			if(guessChars.length !== answerChars.length){
-				setMsg(`${answerChars.length}文字で入力してください（いま ${guessChars.length} 文字）`, 'error');
+				shakeCurrentRow();
+				setMsg('Not enough letters', 'error');
 				return;
 			}
 			if(guessChars.some(ch => ch.trim() === '')){
-				setMsg('空白のみの文字は使えません', 'error');
+				shakeCurrentRow();
+				setMsg('Not enough letters', 'error');
 				return;
 			}
 
@@ -803,7 +818,27 @@
 
 		function updateRemainingDisplay(){
 			const remaining = Math.max(0, maxTries - turn);
-			el.left.textContent = '♪'.repeat(remaining);
+			const used = turn;
+			let html = '';
+			// 残りは塗りつぶし
+			for(let i = 0; i < remaining; i++){
+				html += '<span class="note filled">♪</span>';
+			}
+			// 使用済みは枠だけ
+			for(let i = 0; i < used; i++){
+				html += '<span class="note empty">♪</span>';
+			}
+			el.left.innerHTML = html;
+		}
+
+		function shakeCurrentRow(){
+			const row = el.grid.children[turn];
+			if(!row) return;
+			row.classList.remove('shake');
+			// Force reflow to restart animation
+			void row.offsetWidth;
+			row.classList.add('shake');
+			setTimeout(() => row.classList.remove('shake'), 500);
 		}
 
 			const CSV_URL = './quizzes.csv';
