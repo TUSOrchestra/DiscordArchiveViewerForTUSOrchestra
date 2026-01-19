@@ -83,14 +83,6 @@
 		.input-row .cell{cursor:text}
 
 		.guessbar{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-		.guessbar input[type="text"]{
-			position:absolute;
-			opacity:0;
-			pointer-events:none;
-			width:1px;
-			height:1px;
-		}
-		.guessbar input[type="text"]:focus{outline:none}
 		.candidates{
 			margin-top:10px;
 			display:block;
@@ -243,7 +235,6 @@
 				<div id="inputRow" class="grid-row input-row" aria-label="input"></div>
 
 				<div class="guessbar">
-					<input id="guess" type="text" inputmode="latin" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="" disabled />
 					<button id="giveUpBtn" disabled>ギブアップ</button>
 				</div>
 				<div id="candidates" class="candidates" style="display:none" aria-label="candidates"></div>
@@ -431,13 +422,7 @@
 			const idx = indexOverride == null ? candidateState.index : indexOverride;
 			const ch = candidateState.options[idx];
 			hideCandidates();
-			const currentValue = normalizeWord(el.guess.value);
-			if(toGraphemes(currentValue).length >= answerChars.length){
-				el.guess.focus();
-				return;
-			}
-			insertAtCursor(el.guess, ch);
-			el.guess.focus();
+			addChar(ch);
 		}
 
 		/** Wordle scoring with duplicates handling */
@@ -492,7 +477,6 @@
 			len: document.getElementById('len'),
 			left: document.getElementById('left'),
 			grid: document.getElementById('grid'),
-			guess: document.getElementById('guess'),
 			giveUpBtn: document.getElementById('giveUpBtn'),
 			msg: document.getElementById('msg'),
 			inputRow: document.getElementById('inputRow'),
@@ -518,6 +502,8 @@
 		let over = false;
 		let lastResult = null; // { success, answer, description, turns, maxTries }
 		const keyState = new Map(); // letter -> ok/hit/no
+		let currentInput = ''; // 現在の入力文字列
+		let inputEnabled = false; // 入力が有効かどうか
 		
 		// Allowed characters (must match on-screen keyboard)
 		const ALLOWED_CHARS = new Set([
@@ -537,8 +523,9 @@
 		}
 
 		function enableGameUI(enabled){
-			el.guess.disabled = !enabled;
+			inputEnabled = enabled;
 			el.giveUpBtn.disabled = !enabled;
+			updateInputCells();
 		}
 
 		function clearKeyboard(){
@@ -566,21 +553,17 @@
 					if(state) b.classList.add(state);
 
 					b.addEventListener('click', () => {
-						if(el.guess.disabled) return;
+						if(!inputEnabled) return;
 						if(k === 'ENTER'){
 							submitGuess();
 							return;
 						}
 						if(k === 'BKSP'){
-							el.guess.value = el.guess.value.slice(0, -1);
-							el.guess.focus();
+							deleteLastChar();
 							return;
 						}
 						// regular letter
-						const currentValue = normalizeWord(el.guess.value);
-						if(toGraphemes(currentValue).length >= answerChars.length) return;
-						el.guess.value = currentValue + k;
-						el.guess.focus();
+						addChar(k);
 					});
 
 					targets[idx].appendChild(b);
@@ -654,32 +637,46 @@
 				const cell = document.createElement('div');
 				cell.className = 'cell input-cell';
 				cell.textContent = '';
-				cell.addEventListener('click', () => {
-					if(!el.guess.disabled){
-						el.guess.focus();
-					}
-				});
 				el.inputRow.appendChild(cell);
 			}
 			updateInputCells();
 		}
 
 		function updateInputCells(){
-			const chars = toGraphemes(el.guess.value.toLowerCase());
+			const chars = toGraphemes(currentInput.toLowerCase());
 			const cells = el.inputRow.children;
-			const isFocused = document.activeElement === el.guess && !el.guess.disabled;
 
 			for(let i=0;i<cells.length;i++){
 				const cell = cells[i];
 				cell.textContent = chars[i] ?? '';
 				cell.classList.remove('cursor', 'focus');
-				if(isFocused){
+				if(inputEnabled){
 					cell.classList.add('focus');
 					if(i === chars.length && i < cells.length){
 						cell.classList.add('cursor');
 					}
 				}
 			}
+		}
+
+		// 文字を追加
+		function addChar(ch){
+			if(!inputEnabled) return;
+			const chars = toGraphemes(currentInput);
+			if(chars.length >= answerChars.length) return;
+			if(!ALLOWED_CHARS.has(ch.toLowerCase())) return;
+			currentInput = currentInput + ch.toLowerCase();
+			updateInputCells();
+		}
+
+		// 最後の文字を削除
+		function deleteLastChar(){
+			if(!inputEnabled) return;
+			const chars = toGraphemes(currentInput);
+			if(chars.length === 0) return;
+			chars.pop();
+			currentInput = chars.join('');
+			updateInputCells();
 		}
 
 		function writeRow(rowIndex, guessChars, score){
@@ -762,12 +759,9 @@
 			el.left.textContent = String(maxTries - turn);
 			buildGrid(answerChars.length, maxTries);
 
-			el.guess.value = '';
-			el.guess.maxLength = answerChars.length * 4; // allow multi-byte input; we validate by graphemes
-			el.guess.placeholder = `${answerChars.length}文字で入力してEnter`;
+			currentInput = '';
 
 			enableGameUI(true);
-			el.guess.focus();
 			setMsg('');
 		}
 
@@ -797,9 +791,8 @@
 		}
 
 		function submitGuess(){
-			if(over) return;
-			const raw = el.guess.value;
-			const guessWord = normalizeWord(raw);
+			if(over || !inputEnabled) return;
+			const guessWord = normalizeWord(currentInput);
 			const guessChars = toGraphemes(guessWord);
 
 			if(guessChars.length !== answerChars.length){
@@ -817,7 +810,8 @@
 
 			turn++;
 			el.left.textContent = String(Math.max(0, maxTries - turn));
-			el.guess.value = '';
+			currentInput = '';
+			updateInputCells();
 
 			const isCorrect = score.every(s => s === 'ok');
 			if(isCorrect){
@@ -829,7 +823,6 @@
 				return;
 			}
 			setMsg('');
-			el.guess.focus();
 		}
 
 		function escapeHtml(s){
@@ -948,7 +941,16 @@
                 window.open(discordChannelUrl, '_blank');
             },2000);
 		});
-		el.guess.addEventListener('keydown', (e) => {
+		// キーボード入力を直接受け付ける
+		document.addEventListener('keydown', (e) => {
+			// モーダルが表示中は無視
+			if(el.resultModal.style.display !== 'none') return;
+			// 入力が無効なら無視
+			if(!inputEnabled) return;
+			// 他の入力要素にフォーカスがある場合は無視
+			const tag = document.activeElement?.tagName;
+			if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
 			if(candidateState){
 				if(e.key === 'Tab'){
 					e.preventDefault();
@@ -982,6 +984,12 @@
 				return;
 			}
 
+			if(e.key === 'Backspace'){
+				e.preventDefault();
+				deleteLastChar();
+				return;
+			}
+
 			// Shift + a/o/u/s => show candidates (Tab / arrows / Enter / click to choose)
 			if(e.shiftKey){
 				const k = String(e.key ?? '');
@@ -1001,23 +1009,12 @@
 					return;
 				}
 			}
-		});
 
-		el.guess.addEventListener('input', () => {
-			if(el.guess.disabled) return;
-			// Filter to only allowed characters
-			const chars = toGraphemes(el.guess.value.toLowerCase());
-			const filtered = chars.filter(ch => ALLOWED_CHARS.has(ch));
-			const limited = filtered.slice(0, answerChars.length).join('');
-			if(el.guess.value !== limited){
-				el.guess.value = limited;
+			// 通常の文字入力
+			if(e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey){
+				e.preventDefault();
+				addChar(e.key);
 			}
-			updateInputCells();
-		});
-		el.guess.addEventListener('focus', updateInputCells);
-		el.guess.addEventListener('blur', () => {
-			hideCandidates();
-			updateInputCells();
 		});
 
 		// 読み込みボタンのイベントリスナー
