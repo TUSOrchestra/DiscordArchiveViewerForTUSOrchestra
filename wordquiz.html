@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<script>let version = "1.4";</script>
+	<script>let version = "1.5";</script>
 	<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 	<style>
 		:root{
@@ -46,7 +46,7 @@
 		.game{margin-top:14px}
 		.meta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 		.meta .left{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-		.pill{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#121520}
+		.pill{font-size:14px;color:var(--muted);padding:4px 0}
 		.pill strong{color:var(--text);font-weight:700}
 
 		.grid{margin-top:12px;display:grid;gap:var(--grid-gap, 8px);justify-content:flex-start;max-width:100%}
@@ -80,9 +80,9 @@
 			20%,40%,60%,80%{transform:translateX(5px)}
 		}
 
-		.note{display:inline-block;font-size:14px}
+		.note{display:inline-block;font-size:22px}
 		.note.filled{color:var(--text)}
-		.note.empty{color:transparent;-webkit-text-stroke:1px var(--muted);text-stroke:1px var(--muted)}
+		.note.empty{color:transparent;-webkit-text-stroke:1px var(--muted)}
 
 		.guessbar{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 		.candidates{
@@ -223,7 +223,7 @@
 			<div class="game" id="game" style="display:none">
 				<div class="meta">
 					<div class="left">
-						<div class="pill">文字数: <strong id="len">-</strong></div>
+						<div class="pill"><strong id="len">-</strong>文字</div>
 						<div class="pill" id="left"></div>
 					</div>
 				</div>
