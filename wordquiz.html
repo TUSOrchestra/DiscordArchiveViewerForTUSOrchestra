@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<script>let version = "1.10";</script>
+	<script>let version = "1.11";</script>
 	<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 	<style>
 		:root{
@@ -87,6 +87,7 @@
 			letter-spacing:.02em;
 			text-transform:none;
 			user-select:none;
+			-webkit-user-select:none;
 		}
 		.cell.ok{background:color-mix(in srgb, var(--ok) 35%, var(--cell));border-color:color-mix(in srgb, var(--ok) 70%, var(--line))}
 		.cell.hit{background:color-mix(in srgb, var(--hit) 35%, var(--cell));border-color:color-mix(in srgb, var(--hit) 70%, var(--line))}
@@ -131,6 +132,7 @@
 			font-size:13px;
 			text-align:center;
 			user-select:none;
+			-webkit-user-select:none;
 			cursor:pointer;
 		}
 		.cand.sel{
@@ -187,6 +189,7 @@
 			text-transform:none;
 			text-align:center;
 			user-select:none;
+			-webkit-user-select:none;
 			cursor:pointer;
 		}
 		.k.ok{background:color-mix(in srgb, var(--ok) 25%, var(--cell))}
@@ -255,14 +258,14 @@
 	<div class="wrap">
 		<div class="header-row">
 			<h1>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></h1>
-			<button id="themeToggle" class="theme-toggle"></button>
+			<button id="themeToggle" class="theme-toggle" title="テーマ切替">🌓</button>
 		</div>
 
 		<div class="panel">
 			<div class="row">
-				<button id="loadBtn">CSV再読み込み</button>
-				<button id="newBtn" disabled>新しい問題</button>
-				<button id="ruleBtn">ルール設定</button>
+				<button id="loadBtn" title="CSV再読み込み">CSV再読み込み</button>
+				<button id="newBtn" disabled title="新しい問題">新しい問題</button>
+				<button id="ruleBtn" title="ルール設定">ルール設定</button>
 				<span id="status" class="status">quizzes.csv 未読込</span>
 			</div>
 			<div class="row" id="rulePanel" style="display:none">
@@ -283,13 +286,13 @@
 					</div>
 				</div>
 
-				<div id="grid" class="grid" aria-label="guesses">
+				<div id="grid" class="grid" role="grid">
 				</div>
 
 				<div class="guessbar">
-					<button id="giveUpBtn" disabled>ギブアップ</button>
+					<button id="giveUpBtn" disabled title="ギブアップ">ギブアップ</button>
 				</div>
-				<div id="candidates" class="candidates" style="display:none" aria-label="candidates"></div>
+				<div id="candidates" class="candidates" style="display:none" role="listbox"></div>
 				<div id="msg" class="msg"></div>
 
 				<div class="kbd" aria-label="keyboard">
