@@ -942,7 +942,7 @@
 					setStatus('読み込み中...');
 				setMsg('');
 				try{
-						const text = await loadCsvUrl(CSV_URL);
+					const text = await loadCsvUrl(CSV_URL);
 					const rows = parseCsv(text);
 					if(rows.length < 2) throw new Error('CSVにデータ行がありません');
 
@@ -950,7 +950,7 @@
 					const wordIdx = header.indexOf('word');
 					const descIdx = header.indexOf('description');
 					const abbrIdx = header.indexOf('abbreviation');
-					const diffIdx = header.indexOf('difficultylevel');
+					const diffIdx = header.indexOf('difficulty_level');
 					if(wordIdx === -1 || descIdx === -1){
 						throw new Error('ヘッダーは word,description が必要です');
 					}
