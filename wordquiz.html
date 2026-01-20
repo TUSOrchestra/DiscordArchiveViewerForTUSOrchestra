@@ -444,10 +444,9 @@
 					// prevent input blur
 					e.preventDefault();
 				});
-				b.addEventListener('click', () => {
-					if(el.guess.disabled) return;
-					commitCandidate(idx);
-				});
+				   b.addEventListener('click', () => {
+					   commitCandidate(idx);
+				   });
 
 				li.appendChild(b);
 				list.appendChild(li);
