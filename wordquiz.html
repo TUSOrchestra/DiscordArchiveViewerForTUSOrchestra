@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<script>let version = "1.8";</script>
+	<script>let version = "1.9";</script>
 	<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 	<style>
 		:root{
@@ -144,7 +144,8 @@
 		.toast-container{
 			position:absolute;
 			left:50%;
-			transform:translateX(-50%);
+			top:50%;
+			transform:translate(-50%, -50%);
 			z-index:1000;
 			display:flex;
 			flex-direction:column;
@@ -301,8 +302,6 @@
 
 				<div class="footer">
 					- ルールはWordle同様（位置も一致=緑、含まれる=黄、含まれない=灰）
-					<br />
-					- 文字数はCSVの <code>word</code> に合わせて自動調整
 				</div>
 			</div>
 		</div>
