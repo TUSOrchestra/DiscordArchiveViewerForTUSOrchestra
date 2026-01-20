@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<script>let version = "1.12";</script>
+	<script>let version = "1.13";</script>
 	<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 	<style>
 		:root{
@@ -716,19 +716,19 @@
 			const chars = toGraphemes(currentInput.toLowerCase());
 			const cells = row.children;
 
-			for(let i=0;i<cells.length;i++){
-				const cell = cells[i];
-				// 入力中の行のみ入力文字を表示
-				cell.textContent = chars[i] ?? '';
-				cell.classList.remove('input-cell', 'current');
-				if(inputEnabled){
-					cell.classList.add('input-cell');
-					// 次に入力されるセルをハイライト
-					if(i === chars.length && i < cells.length){
-						cell.classList.add('current');
-					}
-				}
-			}
+			   for(let i=0;i<cells.length;i++){
+				   const cell = cells[i];
+				   // 入力中の行のみ入力文字を表示
+				   cell.textContent = chars[i] ?? '';
+				   cell.classList.remove('input-cell', 'current');
+				   if(inputEnabled){
+					   cell.classList.add('input-cell');
+					   // 入力が空のときも最初のセルをハイライト
+					   if((chars.length === 0 && i === 0) || (i === chars.length && i < cells.length)){
+						   cell.classList.add('current');
+					   }
+				   }
+			   }
 		}
 
 		// 文字を追加
