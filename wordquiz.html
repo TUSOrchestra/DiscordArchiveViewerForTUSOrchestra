@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<script>let version = "1.9";</script>
+	<script>let version = "1.10";</script>
 	<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 	<style>
 		:root{
@@ -284,7 +284,6 @@
 				</div>
 
 				<div id="grid" class="grid" aria-label="guesses">
-					<div id="toastContainer" class="toast-container"></div>
 				</div>
 
 				<div class="guessbar">
@@ -661,13 +660,18 @@
 
 		function buildGrid(cols, rows){
 			el.grid.innerHTML = '';
-			
+			// toastContainerを必ず再生成
+			const toastDiv = document.createElement('div');
+			toastDiv.id = 'toastContainer';
+			toastDiv.className = 'toast-container';
+			el.grid.appendChild(toastDiv);
+
 			// Calculate cell size to fit within panel width (shrink only, not expand)
 			const maxCellSize = 42;
 			const maxGap = 8;
 			const containerWidth = el.grid.parentElement?.clientWidth ?? 600;
 			const neededWidth = cols * maxCellSize + (cols - 1) * maxGap;
-			
+
 			let cellSize = maxCellSize;
 			let cellGap = maxGap;
 			if(neededWidth > containerWidth){
@@ -676,7 +680,7 @@
 				cellSize = Math.floor(maxCellSize * ratio);
 				cellGap = Math.max(2, Math.floor(maxGap * ratio));
 			}
-			
+
 			el.grid.style.setProperty('--cell-size', `${cellSize}px`);
 			el.grid.style.setProperty('--grid-gap', `${cellGap}px`);
 			el.grid.style.setProperty('--cell-font', `${Math.max(10, Math.floor(cellSize * 0.35))}px`);
