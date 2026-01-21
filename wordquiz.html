@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
-		<script>let version = "1.16";</script>
+		<script>let version = "1.17";</script>
 		<title>Word Quiz (CSV Wordle)ver.<script>document.write(version);</script></title>
 		<style>
 			:root{
@@ -557,6 +557,15 @@
 			const keyState = new Map(); // letter -> ok/hit/no
 			let currentInput = ''; // 現在の入力文字列
 			let inputEnabled = false; // 入力が有効かどうか
+
+			// 入力有効/無効を切り替える関数
+			function enableGameUI(flag) {
+				inputEnabled = !!flag;
+				// ギブアップボタンの有効/無効
+				if (el.giveUpBtn) el.giveUpBtn.disabled = !flag;
+				// 新しい問題ボタンは常に有効（entriesがあれば）
+				if (el.newBtn) el.newBtn.disabled = (entries.length === 0);
+			}
 			
 			// Allowed characters (must match on-screen keyboard)
 			const ALLOWED_CHARS = new Set([
