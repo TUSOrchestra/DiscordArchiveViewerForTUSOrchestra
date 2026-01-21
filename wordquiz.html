@@ -973,11 +973,11 @@
 						setStatus(`読み込み完了: ${allEntries.length}件（quizzes.csv）`);
 					startNewGame();
 				}catch(err){
+					console.error("詳細エラー:", err); // コンソールに赤文字で出す
 					entries = [];
 					el.newBtn.disabled = true;
 					el.game.classList.add('hidden');
-					setStatus('読み込み失敗');
-					setMsg(String(err?.message ?? err), 'error');
+					setStatus('読み込み失敗: ' + err.message); // ステータス欄に理由を表示
 				}
 			}
 			el.newBtn.addEventListener('click', () => {
