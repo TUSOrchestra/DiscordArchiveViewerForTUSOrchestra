@@ -1,9 +1,4 @@
-/* wordquiz.css */
-/* CSS部分のみ分離 */
-
-/* ...existing code... */
-/* ここに <style> タグ内の全てのCSSコードを移植 */
-
+/* ...existing code from <style>タグ... */
 :root{
 	--bg:#fbfbfb;
 	--panel:#f3f3f4;
