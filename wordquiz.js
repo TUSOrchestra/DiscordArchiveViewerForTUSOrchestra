@@ -385,8 +385,8 @@ function buildGrid(cols, rows){
 
 function updateInputCells(){
     // 現在のターン行を取得
-    const t = turn + 1;
-    const row = el.grid.children[t];
+    //const t = turn + 1;
+    const row = el.grid.children[turn + 1];
     if(!row) return;
     console.log('Updating input cells:', currentInput);
     const chars = toGraphemes(currentInput.toLowerCase());
