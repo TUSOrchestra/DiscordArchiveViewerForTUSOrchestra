@@ -1,4 +1,3 @@
-
 /**
  * Minimal CSV parser (supports quoted fields and commas/newlines inside quotes).
  */
@@ -510,6 +509,7 @@ function startNewGame(){
     enableGameUI(true);
     setMsg('');
     updateInputCells();
+    document.activeElement.blur(); // ← 追加: フォーカスを外してキーボード入力を受け付ける
 }
 
 function endGame(success){
@@ -654,8 +654,9 @@ function normalizeHeader(s){
         allEntries = parsed;
         updateFilteredEntries();
         el.newBtn.disabled = false;
-            setStatus(`読み込み完了: ${allEntries.length}件（quizzes.csv）`);
+        setStatus(`読み込み完了: ${allEntries.length}件（quizzes.csv）`);
         startNewGame();
+        document.activeElement.blur(); // ← 追加: フォーカスを外してキーボード入力を受け付ける
     }catch(err){
         console.error("詳細エラー:", err); // コンソールに赤文字で出す
         entries = [];
