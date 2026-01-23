@@ -390,7 +390,7 @@ function updateInputCells(){
     console.log('Updating input cells:', currentInput);
     const chars = toGraphemes(currentInput.toLowerCase());
     const cells = row.children;
-    console.log(inputEnabled, chars, cells);
+    console.log(inputEnabled, turn, row);
     for(let i=0;i<cells.length;i++){
         const cell = cells[i];
         // 入力中の行のみ入力文字を表示
