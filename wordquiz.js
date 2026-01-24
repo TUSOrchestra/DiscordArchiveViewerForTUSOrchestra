@@ -101,31 +101,69 @@ function renderCandidates(){
     if(!candidateState || !el.candidates) return;
     el.candidates.innerHTML = '';
 
-    const list = document.createElement('ul');
-    list.className = 'cand-list';
-    list.setAttribute('role', 'listbox');
+    // どのセルの下に出すか: 現在のターン行の入力中セル
+    const row = el.grid.children[turn + 1];
+    if(!row) return;
+    let targetCell = null;
+    const chars = toGraphemes(currentInput.toLowerCase());
+    // 入力中のセル（未入力なら0番目、入力済みなら次のセル）
+    let cellIdx = chars.length;
+    if(cellIdx >= row.children.length) cellIdx = row.children.length - 1;
+    targetCell = row.children[cellIdx];
+    if(!targetCell) return;
+
+    // 候補ボックスの見た目
+    const box = document.createElement('div');
+    box.className = 'candidate-box';
+    // セルの位置・幅・高さを取得
+    const cellRect = targetCell.getBoundingClientRect();
+    const gridRect = el.grid.getBoundingClientRect();
+    // 横幅はセル幅×候補数（最大でグリッド幅まで）
+    const cellW = cellRect.width;
+    const cellH = cellRect.height;
+    const maxBoxW = gridRect.width;
+    const boxW = Math.min(cellW * candidateState.options.length, maxBoxW);
+    box.style.position = 'absolute';
+    box.style.left = (cellRect.left - gridRect.left) + 'px';
+    // 下に出す（スクロール時も考慮）
+    box.style.top = (cellRect.bottom - gridRect.top + 4) + 'px';
+    box.style.width = boxW + 'px';
+    box.style.height = cellH + 'px';
+    box.style.zIndex = 1000;
+    box.style.display = 'flex';
+    box.style.gap = '2px';
+    box.style.background = 'var(--cell-bg, #fff)';
+    box.style.border = '2px solid var(--cell-border, #888)';
+    box.style.borderRadius = '8px';
+    box.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+    box.style.alignItems = 'center';
+    box.style.justifyContent = 'center';
+    box.style.pointerEvents = 'auto';
 
     candidateState.options.forEach((opt, idx) => {
-        const li = document.createElement('li');
-        li.setAttribute('role', 'option');
-        li.setAttribute('aria-selected', String(idx === candidateState.index));
-
-        const b = document.createElement('div');
-        b.className = 'cand' + (idx === candidateState.index ? ' sel' : '');
-        b.textContent = opt;
-        b.addEventListener('mousedown', (e) => {
-            // prevent input blur
+        const cand = document.createElement('div');
+        cand.className = 'cand' + (idx === candidateState.index ? ' sel' : '');
+        cand.textContent = opt;
+        cand.style.flex = '1 1 0';
+        cand.style.textAlign = 'center';
+        cand.style.cursor = 'pointer';
+        cand.style.height = '100%';
+        cand.style.display = 'flex';
+        cand.style.alignItems = 'center';
+        cand.style.justifyContent = 'center';
+        cand.style.fontWeight = idx === candidateState.index ? 'bold' : 'normal';
+        cand.addEventListener('mousedown', (e) => {
             e.preventDefault();
         });
-        b.addEventListener('click', () => {
+        cand.addEventListener('click', () => {
             commitCandidate(idx);
         });
-
-        li.appendChild(b);
-        list.appendChild(li);
+        box.appendChild(cand);
     });
 
-    el.candidates.appendChild(list);
+    // gridをrelativeにして絶対配置
+    el.grid.style.position = 'relative';
+    el.candidates.appendChild(box);
 }
 
 function showCandidates(options, preferredIndex = 0){
@@ -136,6 +174,13 @@ function showCandidates(options, preferredIndex = 0){
     };
     renderCandidates();
     el.candidates.classList.remove('hidden');
+    // gridの上に重ねて絶対配置するため、el.candidatesもabsoluteに
+    el.candidates.style.position = 'absolute';
+    el.candidates.style.left = '0';
+    el.candidates.style.top = '0';
+    el.candidates.style.width = '100%';
+    el.candidates.style.height = '100%';
+    el.candidates.style.pointerEvents = 'none'; // ボックス以外はクリック通さない
 }
 
 function cycleCandidate(delta){
