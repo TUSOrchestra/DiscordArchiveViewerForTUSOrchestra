@@ -384,8 +384,7 @@ function buildGrid(cols, rows){
 }
 
 function updateInputCells(){
-    // 現在のターン行を取得
-    //const t = turn + 1;
+    // 現在のターン行を取得（gridの1つ目はtoastなので+1）
     const row = el.grid.children[turn + 1];
     if(!row) return;
     console.log('Updating input cells:', currentInput);
@@ -428,7 +427,8 @@ function deleteLastChar(){
 }
 
 function writeRow(rowIndex, guessChars, score){
-    const row = el.grid.children[rowIndex];
+    // gridの1つ目はtoastなので+1
+    const row = el.grid.children[rowIndex + 1];
     if(!row) return;
     for(let i=0;i<answerChars.length;i++){
         const cell = row.children[i];
@@ -600,7 +600,8 @@ function updateRemainingDisplay(){
 }
 
 function shakeCurrentRow(){
-    const row = el.grid.children[turn];
+    // gridの1つ目はtoastなので+1
+    const row = el.grid.children[turn + 1];
     if(!row) return;
     row.classList.remove('shake');
     // Force reflow to restart animation
