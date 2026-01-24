@@ -112,7 +112,7 @@ function renderCandidates(){
     targetCell = row.children[cellIdx];
     if(!targetCell) return;
 
-    // 候補ボックスの見た目
+    // 候補ボックスの見た目（CSSで制御）
     const box = document.createElement('div');
     box.className = 'candidate-box';
     // セルの位置・幅・高さを取得
@@ -123,35 +123,15 @@ function renderCandidates(){
     const cellH = cellRect.height;
     const maxBoxW = gridRect.width;
     const boxW = Math.min(cellW * candidateState.options.length, maxBoxW);
-    box.style.position = 'absolute';
     box.style.left = (cellRect.left - gridRect.left) + 'px';
-    // 下に出す（スクロール時も考慮）
     box.style.top = (cellRect.bottom - gridRect.top + 4) + 'px';
     box.style.width = boxW + 'px';
     box.style.height = cellH + 'px';
-    box.style.zIndex = 1000;
-    box.style.display = 'flex';
-    box.style.gap = '2px';
-    box.style.background = 'var(--cell-bg, #fff)';
-    box.style.border = '2px solid var(--cell-border, #888)';
-    box.style.borderRadius = '8px';
-    box.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-    box.style.alignItems = 'center';
-    box.style.justifyContent = 'center';
-    box.style.pointerEvents = 'auto';
 
     candidateState.options.forEach((opt, idx) => {
         const cand = document.createElement('div');
         cand.className = 'cand' + (idx === candidateState.index ? ' sel' : '');
         cand.textContent = opt;
-        cand.style.flex = '1 1 0';
-        cand.style.textAlign = 'center';
-        cand.style.cursor = 'pointer';
-        cand.style.height = '100%';
-        cand.style.display = 'flex';
-        cand.style.alignItems = 'center';
-        cand.style.justifyContent = 'center';
-        cand.style.fontWeight = idx === candidateState.index ? 'bold' : 'normal';
         cand.addEventListener('mousedown', (e) => {
             e.preventDefault();
         });
@@ -161,7 +141,6 @@ function renderCandidates(){
         box.appendChild(cand);
     });
 
-    // gridをrelativeにして絶対配置
     el.grid.style.position = 'relative';
     el.candidates.appendChild(box);
 }

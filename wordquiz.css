@@ -1,3 +1,39 @@
+/* 候補ボックス */
+.candidate-box {
+	position: absolute;
+	z-index: 1000;
+	display: flex;
+	gap: 2px;
+	background: var(--cell-bg, #fff);
+	border: 2px solid var(--cell-border, #888);
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+	align-items: center;
+	justify-content: center;
+	pointer-events: auto;
+	overflow: hidden;
+}
+.candidate-box .cand {
+	flex: 1 1 0;
+	text-align: center;
+	cursor: pointer;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: normal;
+	font-size: var(--cell-font, 14px);
+	border-radius: 0;
+	border: none;
+	background: none;
+	color: var(--text);
+	transition: background 0.1s, font-weight 0.1s;
+}
+.candidate-box .cand.sel {
+	font-weight: bold;
+	background: color-mix(in srgb, var(--focus) 20%, transparent);
+	color: var(--focus);
+}
 /* ...existing code from <style>タグ... */
 :root{
 	--bg:#fbfbfb;
