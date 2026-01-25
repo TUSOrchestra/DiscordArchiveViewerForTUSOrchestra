@@ -121,12 +121,12 @@ function renderCandidates(){
     // 横幅はセル幅×候補数（最大でグリッド幅まで）
     const cellW = cellRect.width;
     const cellH = cellRect.height;
-    const maxBoxW = gridRect.width;
-    const boxW = Math.min(cellW * candidateState.options.length, maxBoxW);
-    box.style.left = (cellRect.left - gridRect.left) + 'px';
-    box.style.top = (cellRect.bottom - gridRect.top + 4) + 'px';
+    const boxW = cellW * candidateState.options.length;
     box.style.width = boxW + 'px';
     box.style.height = cellH + 'px';
+    box.style.left = (cellRect.left - boxW/2) + 'px';
+    box.style.top = (cellRect.top + cellH + 4) + 'px';
+
 
     candidateState.options.forEach((opt, idx) => {
         const cand = document.createElement('div');
