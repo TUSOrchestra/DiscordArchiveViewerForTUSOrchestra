@@ -34,7 +34,6 @@
 	align-items: center;
 	justify-content: center;
 	pointer-events: auto;
-	overflow: hidden;
 }
 .candidate-box .cand {
 	flex: 1 1 0;
