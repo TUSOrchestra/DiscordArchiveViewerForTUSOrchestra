@@ -1,9 +1,26 @@
-:root{
-	--cand-bg:#f3f3f4;
-	--cand-text:#333;
-	--cand-bg-sel:#3b82f6;
-	--cand-text-sel:#fff;
+/* 変数定義と候補ボックススタイルまとめ */
+:root {
+	--bg: #fbfbfb;
+	--panel: #f3f3f4;
+	--text: #333;
+	--muted: #9aa3ac;
+	--line: #dddde0;
+	--ok: #2ea043;
+	--hit: #d29922;
+	--no: #6b7280;
+	--cell: #fff;
+	--cellText: #333;
+	--focus: #3b82f6;
+	--btn-bg: #e7e7e9;
+	--cand-bg: #f3f3f4;
+	--cand-text: #333;
+	--cand-bg-sel: #3b82f6;
+	--cand-text-sel: #fff;
+	--cell-bg: #fff;
+	--cell-border: #888;
+	--cell-font: 14px;
 }
+
 /* 候補ボックス */
 .candidate-box {
 	position: absolute;
@@ -23,17 +40,22 @@
 	flex: 1 1 0;
 	text-align: center;
 	cursor: pointer;
-	background:var(--cand-bg, #f3f3f4);
+	height: 100%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	font-weight: normal;
 	font-size: var(--cell-font, 14px);
 	border-radius: 0;
-	transition:background 0.1s, color 0.1s;
 	border: none;
 	background: none;
 	color: var(--text);
+	transition: background 0.1s, font-weight 0.1s;
+}
+.candidate-box .cand.sel {
+	font-weight: bold;
+	background: color-mix(in srgb, var(--focus) 20%, transparent);
+	color: var(--focus);
 	transition: background 0.1s, font-weight 0.1s;
 	background:var(--cand-bg-sel, #3b82f6);
 	color:var(--cand-text-sel, #fff);
@@ -44,33 +66,27 @@
 	color: var(--focus);
 }
 /* ...existing code from <style>タグ... */
-:root{
-	--bg:#fbfbfb;
-	--panel:#f3f3f4;
-	--text:#333;
-	--muted:#9aa3ac;
-	--line:#dddde0;
-	--ok:#2ea043;
-	--hit:#d29922;
-	--no:#6b7280;
-	--cell:#fff;
-	--cellText:#333;
-	--focus:#3b82f6;
-	--btn-bg:#e7e7e9;
-}
+/* 2つ目の:root定義を削除（1つ目に統合済み） */
 body[data-theme="dark"]{
-	--bg:#0f1115;
-	--panel:#171a21;
-	--text:#e8eaf0;
-	--muted:#9aa3b2;
-	--line:#2a2f3a;
-	--cell:#11141b;
-	--cellText:#e8eaf0;
-	--btn-bg:#232838;
-	--cand-bg:#232838;
-	--cand-text:#e8eaf0;
-	--cand-bg-sel:#3b82f6;
-	--cand-text-sel:#fff;
+	--bg: #0f1115;
+	--panel: #171a21;
+	--text: #e8eaf0;
+	--muted: #9aa3b2;
+	--line: #2a2f3a;
+	--ok: #2ea043;
+	--hit: #d29922;
+	--no: #6b7280;
+	--cell: #11141b;
+	--cellText: #e8eaf0;
+	--focus: #3b82f6;
+	--btn-bg: #232838;
+	--cand-bg: #232838;
+	--cand-text: #e8eaf0;
+	--cand-bg-sel: #3b82f6;
+	--cand-text-sel: #fff;
+	--cell-bg: #11141b;
+	--cell-border: #888;
+	--cell-font: 14px;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;background:var(--bg);color:var(--text);transition:background 0.1s,color 0.1s}
@@ -164,22 +180,27 @@ button:disabled{opacity:.5;cursor:not-allowed}
 	gap:6px;
 	max-width:260px;
 }
+/* .cand, .cand.sel をbody[data-theme="dark"]の直後に移動 */
+/* 候補リスト（candidates）用スタイル */
 .cand{
 	width:100%;
 	padding:8px 10px;
 	border-radius:10px;
 	border:1px solid var(--line);
-	background:#0c0f15;
-	color:var(--text);
+	background:var(--cand-bg, #f3f3f4);
+	color:var(--cand-text, #333);
 	font-size:13px;
 	text-align:center;
 	-webkit-user-select:none;
 	user-select:none;
 	cursor:pointer;
+	transition:background 0.1s, color 0.1s;
 }
 .cand.sel{
 	border-color:var(--focus);
 	box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
+	background:var(--cand-bg-sel, #3b82f6);
+	color:var(--cand-text-sel, #fff);
 }
 .msg{margin-top:10px;font-size:13px;color:var(--muted)}
 .msg.error{color:#fca5a5}
