@@ -157,8 +157,8 @@ function showCandidates(options, preferredIndex = 0){
     el.candidates.style.position = 'absolute';
     el.candidates.style.left = '0';
     el.candidates.style.top = '0';
-    el.candidates.style.width = '100%';
-    el.candidates.style.height = '100%';
+    el.candidates.style.width = '90%';
+    el.candidates.style.height = '90%';
     el.candidates.style.pointerEvents = 'none'; // ボックス以外はクリック通さない
 }
 
@@ -752,7 +752,8 @@ document.addEventListener('keydown', (e) => {
     if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
     if(candidateState){
-        if(e.key === 'Tab'){
+        if(e.key === 'Tab' || e.key === ' ' || e.key === 'Spacebar'){
+            // Tab または Space で候補移動
             e.preventDefault();
             cycleCandidate(e.shiftKey ? -1 : 1);
             return;

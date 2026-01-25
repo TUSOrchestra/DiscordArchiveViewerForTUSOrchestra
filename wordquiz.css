@@ -20,6 +20,27 @@
 	--cell-border: #888;
 	--cell-font: 14px;
 }
+body[data-theme="dark"]{
+	--bg: #0f1115;
+	--panel: #171a21;
+	--text: #e8eaf0;
+	--muted: #9aa3b2;
+	--line: #2a2f3a;
+	--ok: #2ea043;
+	--hit: #d29922;
+	--no: #6b7280;
+	--cell: #11141b;
+	--cellText: #e8eaf0;
+	--focus: #3b82f6;
+	--btn-bg: #232838;
+	--cand-bg: #232838;
+	--cand-text: #e8eaf0;
+	--cand-bg-sel: #3b82f6;
+	--cand-text-sel: #fff;
+	--cell-bg: #11141b;
+	--cell-border: #888;
+	--cell-font: 14px;
+}
 
 /* 候補ボックス */
 .candidate-box {
@@ -63,29 +84,6 @@
 	font-weight: bold;
 	background: color-mix(in srgb, var(--focus) 20%, transparent);
 	color: var(--focus);
-}
-/* ...existing code from <style>タグ... */
-/* 2つ目の:root定義を削除（1つ目に統合済み） */
-body[data-theme="dark"]{
-	--bg: #0f1115;
-	--panel: #171a21;
-	--text: #e8eaf0;
-	--muted: #9aa3b2;
-	--line: #2a2f3a;
-	--ok: #2ea043;
-	--hit: #d29922;
-	--no: #6b7280;
-	--cell: #11141b;
-	--cellText: #e8eaf0;
-	--focus: #3b82f6;
-	--btn-bg: #232838;
-	--cand-bg: #232838;
-	--cand-text: #e8eaf0;
-	--cand-bg-sel: #3b82f6;
-	--cand-text-sel: #fff;
-	--cell-bg: #11141b;
-	--cell-border: #888;
-	--cell-font: 14px;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;background:var(--bg);color:var(--text);transition:background 0.1s,color 0.1s}
@@ -168,7 +166,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
 .guessbar{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .candidates{
-	margin-top:10px;
 	display:block;
 }
 .cand-list{
